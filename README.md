@@ -218,7 +218,7 @@ HealthSync/
 
 | Role | Email | Password | Access Level |
 |------|-------|----------|--------------|
-| **Admin** | admin@healthsync.com | admin123 | Full system access |
+| **Admin** | ------- | ------ | Full system access |
 | **Doctor** | doctor@healthsync.com | doctor123 | Medical operations |
 | **Nurse** | nurse@healthsync.com | nurse123 | Patient care |
 | **Patient** | patient@healthsync.com | patient123 | Personal records |
