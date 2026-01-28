@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Create Prescription - HealthSync{% endblock %}
+{% block page_title %}Create New Prescription{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-pills"></i> Prescription Form
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="prescriptionForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patient_id" class="form-label">Patient *</label>
+                                <select class="form-control" id="patient_id" name="patient_id" required>
+                                    <option value="">Select Patient</option>
+                                    {% for patient in patients %}
+                                    <option value="{{ patient.id }}">{{ patient.patient_id }} - {{ patient.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="medication" class="form-label">Medication *</label>
+                                <input type="text" class="form-control" id="medication" name="medication" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dosage" class="form-label">Dosage *</label>
+                                <input type="text" class="form-control" id="dosage" name="dosage" placeholder="e.g., 500mg, 2 tablets" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="frequency" class="form-label">Frequency</label>
+                                <select class="form-control" id="frequency" name="frequency">
+                                    <option value="">Select Frequency</option>
+                                    <option value="Once daily">Once daily</option>
+                                    <option value="Twice daily">Twice daily</option>
+                                    <option value="Three times daily">Three times daily</option>
+                                    <option value="Four times daily">Four times daily</option>
+                                    <option value="As needed">As needed</option>
+                                    <option value="Before meals">Before meals</option>
+                                    <option value="After meals">After meals</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="instructions" class="form-label">Instructions *</label>
+                        <textarea class="form-control" id="instructions" name="instructions" rows="4" 
+                                  placeholder="Detailed instructions for the patient..." required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="duration" class="form-label">Duration</label>
+                                <input type="text" class="form-control" id="duration" name="duration" placeholder="e.g., 7 days, 2 weeks">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="refills" class="form-label">Refills</label>
+                                <select class="form-control" id="refills" name="refills">
+                                    <option value="0">No refills</option>
+                                    <option value="1">1 refill</option>
+                                    <option value="2">2 refills</option>
+                                    <option value="3">3 refills</option>
+                                    <option value="4">4 refills</option>
+                                    <option value="5">5 refills</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Doctor Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Additional notes or warnings..."></textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('prescriptions_page') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Prescriptions
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Prescription
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> Prescription Guidelines
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>Important Notes:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success"></i> Always verify patient identity</li>
+                    <li><i class="fas fa-check text-success"></i> Check for drug interactions</li>
+                    <li><i class="fas fa-check text-success"></i> Provide clear dosage instructions</li>
+                    <li><i class="fas fa-check text-success"></i> Include duration of treatment</li>
+                    <li><i class="fas fa-check text-success"></i> Note any side effects to watch for</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Common Medications:</h6>
+                <div class="mb-2">
+                    <button class="btn btn-sm btn-outline-primary" onclick="setMedication('Paracetamol', '500mg', 'Take with food')">
+                        Paracetamol
+                    </button>
+                </div>
+                <div class="mb-2">
+                    <button class="btn btn-sm btn-outline-primary" onclick="setMedication('Ibuprofen', '400mg', 'Take with food, avoid on empty stomach')">
+                        Ibuprofen
+                    </button>
+                </div>
+                <div class="mb-2">
+                    <button class="btn btn-sm btn-outline-primary" onclick="setMedication('Amoxicillin', '500mg', 'Take every 8 hours')">
+                        Amoxicillin
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setMedication(medication, dosage, instructions) {
+    document.getElementById('medication').value = medication;
+    document.getElementById('dosage').value = dosage;
+    document.getElementById('instructions').value = instructions;
+}
+
+document.getElementById('prescriptionForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Add doctor_id from session
+    data.doctor_id = {{ session.user_id }};
+    
+    try {
+        const response = await fetch('/api/prescriptions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Prescription created successfully!');
+            window.location.href = '/prescriptions';
+        } else {
+            alert('Error: ' + result.msg);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+</script>
+{% endblock %}

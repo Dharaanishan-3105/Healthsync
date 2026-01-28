@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Appointments - HealthSync{% endblock %}
+{% block page_title %}Appointment Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Appointment Management</h2>
+    <div>
+        <button class="btn btn-outline-primary me-2" onclick="toggleView()">
+            <i class="fas fa-calendar-alt"></i> Calendar View
+        </button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAppointmentModal">
+            <i class="fas fa-plus"></i> Schedule Appointment
+        </button>
+    </div>
+</div>
+
+<!-- View Toggle -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="searchAppointments" placeholder="Search appointments...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-control" id="filterStatus">
+                    <option value="">All Status</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="rescheduled">Rescheduled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-control" id="filterDoctor">
+                    <option value="">All Doctors</option>
+                    <option value="Dr. Johnson">Dr. Johnson</option>
+                    <option value="Dr. Smith">Dr. Smith</option>
+                    <option value="Dr. Wilson">Dr. Wilson</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" class="form-control" id="filterDate">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Calendar View (Hidden by default) -->
+<div id="calendarView" class="card mb-4" style="display: none;">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-calendar-alt"></i> Calendar View
+        </h5>
+    </div>
+    <div class="card-body">
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Doctor</th>
+                        <th>Date & Time</th>
+                        <th>Type</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment in appointments %}
+                    <tr>
+                        <td>{{ appointment.patient.name if appointment.patient else 'N/A' }}</td>
+                        <td>{{ appointment.doctor.full_name if appointment.doctor else 'N/A' }}</td>
+                        <td>{{ appointment.scheduled_for.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ appointment.appointment_type or 'General' }}</td>
+                        <td>{{ appointment.location or 'N/A' }}</td>
+                        <td>
+                            {% if appointment.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                            {% elif appointment.status == 'scheduled' %}
+                                <span class="badge bg-warning">Scheduled</span>
+                            {% elif appointment.status == 'cancelled' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ appointment.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewAppointment({{ appointment.id }})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            {% if current_role in ['admin', 'doctor', 'receptionist'] %}
+                            <button class="btn btn-sm btn-outline-warning" onclick="editAppointment({{ appointment.id }})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Appointment Modal -->
+<div class="modal fade" id="addAppointmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Schedule New Appointment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addAppointmentForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patient_id" class="form-label">Patient *</label>
+                                <select class="form-control" id="patient_id" name="patient_id" required>
+                                    <option value="">Select Patient</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="doctor_id" class="form-label">Doctor *</label>
+                                <select class="form-control" id="doctor_id" name="doctor_id" required>
+                                    <option value="">Select Doctor</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="scheduled_for" class="form-label">Date & Time *</label>
+                                <input type="datetime-local" class="form-control" id="scheduled_for" name="scheduled_for" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="appointment_type" class="form-label">Appointment Type</label>
+                                <select class="form-control" id="appointment_type" name="appointment_type">
+                                    <option value="General Consultation">General Consultation</option>
+                                    <option value="Follow-up">Follow-up</option>
+                                    <option value="Emergency">Emergency</option>
+                                    <option value="Specialist Consultation">Specialist Consultation</option>
+                                    <option value="Check-up">Check-up</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="location" name="location" placeholder="e.g., Room 101">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-control" id="status" name="status">
+                                    <option value="scheduled">Scheduled</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addAppointment()">Schedule Appointment</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function addAppointment() {
+    const form = document.getElementById('addAppointmentForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/appointments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Appointment scheduled successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + result.msg);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function viewAppointment(appointmentId) {
+    alert('View appointment: ' + appointmentId);
+}
+
+function editAppointment(appointmentId) {
+    alert('Edit appointment: ' + appointmentId);
+}
+
+// Calendar and filter functionality
+function toggleView() {
+    const calendarView = document.getElementById('calendarView');
+    const tableView = document.querySelector('.card:last-of-type');
+    
+    if (calendarView.style.display === 'none') {
+        calendarView.style.display = 'block';
+        tableView.style.display = 'none';
+        initializeCalendar();
+    } else {
+        calendarView.style.display = 'none';
+        tableView.style.display = 'block';
+    }
+}
+
+function initializeCalendar() {
+    const calendar = document.getElementById('calendar');
+    const appointments = [
+        {% for appointment in appointments %}
+        {
+            id: {{ appointment.id }},
+            title: '{{ appointment.patient.name if appointment.patient else "N/A" }}',
+            start: '{{ appointment.scheduled_for.strftime("%Y-%m-%dT%H:%M") if appointment.scheduled_for else "" }}',
+            status: '{{ appointment.status }}',
+            doctor: '{{ appointment.doctor.full_name if appointment.doctor else "N/A" }}',
+            type: '{{ appointment.appointment_type or "General" }}'
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    // Simple calendar implementation
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    let calendarHTML = `
+        <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
+            <h5>${new Date(currentYear, currentMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h5>
+            <div>
+                <button class="btn btn-sm btn-outline-primary" onclick="previousMonth()">Previous</button>
+                <button class="btn btn-sm btn-outline-primary" onclick="nextMonth()">Next</button>
+            </div>
+        </div>
+        <div class="calendar-grid">
+            <div class="row">
+                <div class="col text-center fw-bold">Sun</div>
+                <div class="col text-center fw-bold">Mon</div>
+                <div class="col text-center fw-bold">Tue</div>
+                <div class="col text-center fw-bold">Wed</div>
+                <div class="col text-center fw-bold">Thu</div>
+                <div class="col text-center fw-bold">Fri</div>
+                <div class="col text-center fw-bold">Sat</div>
+            </div>
+    `;
+    
+    // Generate calendar days
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    for (let week = 0; week < 6; week++) {
+        calendarHTML += '<div class="row">';
+        for (let day = 0; day < 7; day++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + (week * 7) + day);
+            
+            const dayAppointments = appointments.filter(apt => {
+                const aptDate = new Date(apt.start);
+                return aptDate.toDateString() === currentDate.toDateString();
+            });
+            
+            const isCurrentMonth = currentDate.getMonth() === currentMonth;
+            const isToday = currentDate.toDateString() === today.toDateString();
+            
+            calendarHTML += `
+                <div class="col calendar-day ${isCurrentMonth ? '' : 'text-muted'} ${isToday ? 'bg-primary text-white' : ''}" 
+                     style="min-height: 100px; border: 1px solid #dee2e6; padding: 5px;">
+                    <div class="fw-bold">${currentDate.getDate()}</div>
+                    ${dayAppointments.map(apt => `
+                        <div class="small appointment-item" 
+                             style="background: ${getStatusColor(apt.status)}; color: white; margin: 1px; padding: 2px; border-radius: 3px;"
+                             title="${apt.title} - ${apt.doctor}">
+                            ${apt.title}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        calendarHTML += '</div>';
+    }
+    
+    calendarHTML += '</div>';
+    calendar.innerHTML = calendarHTML;
+}
+
+function getStatusColor(status) {
+    switch(status) {
+        case 'scheduled': return '#007bff';
+        case 'completed': return '#28a745';
+        case 'cancelled': return '#dc3545';
+        case 'rescheduled': return '#ffc107';
+        default: return '#6c757d';
+    }
+}
+
+function filterAppointments() {
+    const searchTerm = document.getElementById('searchAppointments').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatus').value;
+    const doctorFilter = document.getElementById('filterDoctor').value;
+    const dateFilter = document.getElementById('filterDate').value;
+    
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const patient = row.cells[0].textContent.toLowerCase();
+        const doctor = row.cells[1].textContent.toLowerCase();
+        const date = row.cells[2].textContent;
+        const status = row.cells[5].textContent.toLowerCase();
+        
+        const matchesSearch = patient.includes(searchTerm) || doctor.includes(searchTerm);
+        const matchesStatus = !statusFilter || status.includes(statusFilter);
+        const matchesDoctor = !doctorFilter || doctor.includes(doctorFilter.toLowerCase());
+        const matchesDate = !dateFilter || date.includes(dateFilter);
+        
+        if (matchesSearch && matchesStatus && matchesDoctor && matchesDate) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('searchAppointments').addEventListener('input', filterAppointments);
+    document.getElementById('filterStatus').addEventListener('change', filterAppointments);
+    document.getElementById('filterDoctor').addEventListener('change', filterAppointments);
+    document.getElementById('filterDate').addEventListener('change', filterAppointments);
+});
+</script>
+{% endblock %}

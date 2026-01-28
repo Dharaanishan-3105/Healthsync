@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HealthSync - Smart Hospital Management System{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: #ecf0f1;
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: translateX(5px);
+        }
+        .sidebar .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: none;
+            transition: transform 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .logo img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .logo i {
+            font-size: 2.5rem;
+            color: #00d4aa;
+            margin-bottom: 10px;
+        }
+        .role-badge {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .real-time-update {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 sidebar p-0">
+                <div class="logo">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="HealthSync Logo">
+                    <div>
+                        <span>HealthSync</span><br>
+                        <small style="font-size: 0.7rem; color: #bdc3c7;">Smart Hospital Management</small>
+                    </div>
+                </div>
+                <nav class="nav flex-column px-3">
+                    <a class="nav-link" href="{{ url_for('dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    {% if session.user_role in ['admin', 'doctor', 'nurse', 'receptionist'] %}
+                    <a class="nav-link" href="{{ url_for('patients_page') }}">
+                        <i class="fas fa-users"></i> Patients
+                    </a>
+                    {% endif %}
+                    {% if session.user_role in ['admin', 'doctor', 'receptionist'] %}
+                    <a class="nav-link" href="{{ url_for('appointments_page') }}">
+                        <i class="fas fa-calendar"></i> Appointments
+                    </a>
+                    {% endif %}
+                    {% if session.user_role in ['admin', 'doctor', 'pharmacy_nurse', 'nurse'] %}
+                    <a class="nav-link" href="{{ url_for('prescriptions_page') }}">
+                        <i class="fas fa-pills"></i> Prescriptions
+                        {% if session.user_role == 'pharmacy_nurse' %}
+                        <span class="notification-badge" id="prescription-notifications">0</span>
+                        {% endif %}
+                    </a>
+                    {% endif %}
+                    {% if session.user_role in ['admin', 'pharmacy_nurse'] %}
+                    <a class="nav-link" href="{{ url_for('pharmacy_dashboard_page') }}">
+                        <i class="fas fa-clinic-medical"></i> Pharmacy Dashboard
+                    </a>
+                    {% endif %}
+                    {% if session.user_role in ['admin', 'doctor', 'nurse'] %}
+                    <a class="nav-link" href="{{ url_for('vital_monitoring_page') }}">
+                        <i class="fas fa-heartbeat"></i> Vital Monitoring
+                    </a>
+                    {% endif %}
+                    {% if session.user_role in ['admin', 'doctor', 'nurse'] %}
+                    <a class="nav-link" href="{{ url_for('medication_administration_page') }}">
+                        <i class="fas fa-pills"></i> Medication Admin
+                    </a>
+                    {% endif %}
+                    {% if session.user_role in ['admin', 'doctor', 'nurse'] %}
+                    <a class="nav-link" href="{{ url_for('shift_schedule_page') }}">
+                        <i class="fas fa-calendar-alt"></i> Shift Schedule
+                    </a>
+                    {% endif %}
+                    {% if session.user_role in ['admin', 'doctor', 'lab_assistant'] %}
+                    <a class="nav-link" href="{{ url_for('lab_results_page') }}">
+                        <i class="fas fa-flask"></i> Lab Results
+                        {% if session.user_role == 'lab_assistant' %}
+                        <span class="notification-badge" id="lab-notifications">0</span>
+                        {% endif %}
+                    </a>
+                    {% endif %}
+                    {% if session.user_role in ['admin', 'lab_assistant'] %}
+                    <a class="nav-link" href="{{ url_for('lab_dashboard_page') }}">
+                        <i class="fas fa-microscope"></i> Lab Dashboard
+                    </a>
+                    {% endif %}
+                    {% if session.user_role in ['admin', 'receptionist'] %}
+                    <a class="nav-link" href="{{ url_for('billing_page') }}">
+                        <i class="fas fa-receipt"></i> Billing
+                    </a>
+                    {% endif %}
+                    {% if session.user_role in ['admin', 'receptionist'] %}
+                    <a class="nav-link" href="{{ url_for('receptionist_dashboard_page') }}">
+                        <i class="fas fa-desktop"></i> Reception Dashboard
+                    </a>
+                    {% endif %}
+                    {% if session.user_role in ['admin', 'patient'] %}
+                    <a class="nav-link" href="{{ url_for('patient_dashboard_page') }}">
+                        <i class="fas fa-user"></i> Patient Portal
+                    </a>
+                    {% endif %}
+                    {% if session.user_role == 'admin' %}
+                    <a class="nav-link" href="{{ url_for('admin_page') }}">
+                        <i class="fas fa-cog"></i> Admin Panel
+                    </a>
+                    <a class="nav-link" href="{{ url_for('admin_dashboard_page') }}">
+                        <i class="fas fa-tachometer-alt"></i> Admin Dashboard
+                    </a>
+                    {% endif %}
+                    {% if session.user_role in ['admin', 'doctor'] %}
+                    <a class="nav-link" href="{{ url_for('ai_dashboard_page') }}">
+                        <i class="fas fa-brain"></i> AI Dashboard
+                    </a>
+                    {% endif %}
+                    <hr style="border-color: rgba(255,255,255,0.3);">
+                    <a class="nav-link" href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </nav>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-10 main-content">
+                <div class="p-4">
+                    <!-- Top Bar -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h1 class="h3 mb-0">{% block page_title %}Dashboard{% endblock %}</h1>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-primary role-badge me-2">{{ session.user_role.title() }}</span>
+                            <span class="text-muted">Welcome, {{ session.user_name }}</span>
+                            <div class="ms-3">
+                                <i class="fas fa-circle text-success real-time-update" title="Real-time updates active"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Real-time updates
+        function updateNotifications() {
+            fetch('/api/notifications')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.prescription_notifications > 0) {
+                        document.getElementById('prescription-notifications').textContent = data.prescription_notifications;
+                        document.getElementById('prescription-notifications').style.display = 'flex';
+                    }
+                    if (data.lab_notifications > 0) {
+                        document.getElementById('lab-notifications').textContent = data.lab_notifications;
+                        document.getElementById('lab-notifications').style.display = 'flex';
+                    }
+                })
+                .catch(error => console.log('Notification update failed:', error));
+        }
+        
+        // Update notifications every 30 seconds
+        setInterval(updateNotifications, 30000);
+        
+        // Initial notification check
+        updateNotifications();
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

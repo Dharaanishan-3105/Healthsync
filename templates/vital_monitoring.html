@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Vital Monitoring - HealthSync{% endblock %}
+{% block page_title %}Vital Monitoring{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Patient Vital Monitoring</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#recordVitalsModal">
+        <i class="fas fa-plus"></i> Record Vitals
+    </button>
+</div>
+
+<!-- Real-time Vital Alerts -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-danger" id="emergencyAlerts" style="display: none;">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Emergency Alerts</h5>
+            </div>
+            <div class="card-body" id="alertContent">
+                <!-- Emergency alerts will be populated here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Patient Selection -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <label for="patientSelect" class="form-label">Select Patient</label>
+                <select class="form-control" id="patientSelect" onchange="loadPatientVitals()">
+                    <option value="">Choose a patient...</option>
+                    {% for patient in patients %}
+                    <option value="{{ patient.id }}">{{ patient.patient_id }} - {{ patient.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="vitalFilter" class="form-label">Filter by Date</label>
+                <input type="date" class="form-control" id="vitalFilter" onchange="filterVitals()">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current Vitals Display -->
+<div class="row mb-4" id="currentVitals" style="display: none;">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h4>Blood Pressure</h4>
+                <h2 id="currentBP">--/--</h2>
+                <small id="bpTime">--</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h4>Heart Rate</h4>
+                <h2 id="currentHR">--</h2>
+                <small id="hrTime">--</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <h4>Temperature</h4>
+                <h2 id="currentTemp">--°F</h2>
+                <small id="tempTime">--</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h4>Weight</h4>
+                <h2 id="currentWeight">-- lbs</h2>
+                <small id="weightTime">--</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vital History -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-chart-line"></i> Vital Signs History
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="vitalsTable">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Blood Pressure</th>
+                        <th>Heart Rate</th>
+                        <th>Temperature</th>
+                        <th>Weight</th>
+                        <th>Notes</th>
+                        <th>Recorded By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="vitalsTableBody">
+                    <!-- Vital records will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Record Vitals Modal -->
+<div class="modal fade" id="recordVitalsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Record Patient Vitals</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="vitalsForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vitalPatient" class="form-label">Patient *</label>
+                                <select class="form-control" id="vitalPatient" name="patient_id" required>
+                                    <option value="">Select Patient</option>
+                                    {% for patient in patients %}
+                                    <option value="{{ patient.id }}">{{ patient.patient_id }} - {{ patient.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="bloodPressure" class="form-label">Blood Pressure</label>
+                                <input type="text" class="form-control" id="bloodPressure" name="blood_pressure" placeholder="e.g., 120/80">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="heartRate" class="form-label">Heart Rate (BPM)</label>
+                                <input type="number" class="form-control" id="heartRate" name="heart_rate" placeholder="e.g., 72">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="temperature" class="form-label">Temperature (°F)</label>
+                                <input type="number" step="0.1" class="form-control" id="temperature" name="temperature" placeholder="e.g., 98.6">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="weight" class="form-label">Weight (lbs)</label>
+                                <input type="number" step="0.1" class="form-control" id="weight" name="weight" placeholder="e.g., 150.5">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="height" class="form-label">Height (inches)</label>
+                                <input type="number" step="0.1" class="form-control" id="height" name="height" placeholder="e.g., 65.5">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="vitalNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="vitalNotes" name="notes" rows="3" 
+                                  placeholder="Any observations or concerns..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="recordVitals()">
+                    <i class="fas fa-save"></i> Record Vitals
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPatientId = null;
+let vitalsData = [];
+
+// Load patient vitals when patient is selected
+function loadPatientVitals() {
+    currentPatientId = document.getElementById('patientSelect').value;
+    if (!currentPatientId) {
+        document.getElementById('currentVitals').style.display = 'none';
+        document.getElementById('vitalsTableBody').innerHTML = '';
+        return;
+    }
+    
+    fetch(`/api/vitals?patient_id=${currentPatientId}`)
+        .then(response => response.json())
+        .then(data => {
+            vitalsData = data;
+            displayCurrentVitals(data);
+            displayVitalsHistory(data);
+            checkForAlerts(data);
+        })
+        .catch(error => {
+            console.error('Error loading vitals:', error);
+            alert('Error loading patient vitals');
+        });
+}
+
+// Display current vitals
+function displayCurrentVitals(vitals) {
+    if (vitals.length === 0) {
+        document.getElementById('currentVitals').style.display = 'none';
+        return;
+    }
+    
+    const latest = vitals[0];
+    document.getElementById('currentBP').textContent = latest.blood_pressure || '--/--';
+    document.getElementById('currentHR').textContent = latest.heart_rate || '--';
+    document.getElementById('currentTemp').textContent = latest.temperature ? latest.temperature + '°F' : '--°F';
+    document.getElementById('currentWeight').textContent = latest.weight ? latest.weight + ' lbs' : '-- lbs';
+    
+    const time = new Date(latest.recorded_at).toLocaleString();
+    document.getElementById('bpTime').textContent = time;
+    document.getElementById('hrTime').textContent = time;
+    document.getElementById('tempTime').textContent = time;
+    document.getElementById('weightTime').textContent = time;
+    
+    document.getElementById('currentVitals').style.display = 'block';
+}
+
+// Display vitals history
+function displayVitalsHistory(vitals) {
+    const tbody = document.getElementById('vitalsTableBody');
+    tbody.innerHTML = '';
+    
+    vitals.forEach(vital => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${new Date(vital.recorded_at).toLocaleString()}</td>
+            <td>${vital.blood_pressure || '--'}</td>
+            <td>${vital.heart_rate || '--'}</td>
+            <td>${vital.temperature ? vital.temperature + '°F' : '--'}</td>
+            <td>${vital.weight ? vital.weight + ' lbs' : '--'}</td>
+            <td>${vital.notes || '--'}</td>
+            <td>${vital.recorded_by}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewVitalDetails(${vital.id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Check for critical vital signs
+function checkForAlerts(vitals) {
+    const alerts = [];
+    
+    vitals.forEach(vital => {
+        // Check for critical values
+        if (vital.heart_rate && (vital.heart_rate < 50 || vital.heart_rate > 120)) {
+            alerts.push(`Critical heart rate: ${vital.heart_rate} BPM for ${vital.patient_name}`);
+        }
+        
+        if (vital.temperature && (vital.temperature < 95 || vital.temperature > 104)) {
+            alerts.push(`Critical temperature: ${vital.temperature}°F for ${vital.patient_name}`);
+        }
+        
+        if (vital.blood_pressure) {
+            const bp = vital.blood_pressure.split('/');
+            if (bp.length === 2) {
+                const systolic = parseInt(bp[0]);
+                const diastolic = parseInt(bp[1]);
+                if (systolic > 180 || diastolic > 110 || systolic < 90 || diastolic < 60) {
+                    alerts.push(`Critical blood pressure: ${vital.blood_pressure} for ${vital.patient_name}`);
+                }
+            }
+        }
+    });
+    
+    if (alerts.length > 0) {
+        document.getElementById('alertContent').innerHTML = alerts.map(alert => 
+            `<div class="alert alert-danger">${alert}</div>`
+        ).join('');
+        document.getElementById('emergencyAlerts').style.display = 'block';
+    } else {
+        document.getElementById('emergencyAlerts').style.display = 'none';
+    }
+}
+
+// Record new vitals
+async function recordVitals() {
+    const form = document.getElementById('vitalsForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/vitals', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Vitals recorded successfully!');
+            document.getElementById('vitalsForm').reset();
+            bootstrap.Modal.getInstance(document.getElementById('recordVitalsModal')).hide();
+            loadPatientVitals(); // Refresh the data
+        } else {
+            alert('Error: ' + result.msg);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function viewVitalDetails(vitalId) {
+    // Implementation for viewing vital details
+    alert('View vital details: ' + vitalId);
+}
+
+function filterVitals() {
+    const dateFilter = document.getElementById('vitalFilter').value;
+    if (!dateFilter) {
+        displayVitalsHistory(vitalsData);
+        return;
+    }
+    
+    const filtered = vitalsData.filter(vital => 
+        vital.recorded_at.startsWith(dateFilter)
+    );
+    displayVitalsHistory(filtered);
+}
+
+// Auto-refresh vitals every 30 seconds
+setInterval(() => {
+    if (currentPatientId) {
+        loadPatientVitals();
+    }
+}, 30000);
+</script>
+{% endblock %}

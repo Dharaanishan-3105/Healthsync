@@ -1,0 +1,1217 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Dashboard - HealthSync{% endblock %}
+{% block page_title %}Patient Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>My Health Portal</h2>
+    <div>
+        <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#bookAppointmentModal">
+            <i class="fas fa-calendar-plus"></i> Book Appointment
+        </button>
+        <button class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#telemedicineModal">
+            <i class="fas fa-video"></i> Telemedicine
+        </button>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+            <i class="fas fa-comment"></i> Give Feedback
+        </button>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Upcoming Appointments</h4>
+                        <h2 class="mb-0" id="upcomingAppointmentsCount">0</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-calendar-check fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Active Prescriptions</h4>
+                        <h2 class="mb-0" id="activePrescriptionsCount">0</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-pills fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Lab Results</h4>
+                        <h2 class="mb-0" id="labResultsCount">0</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-flask fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Notifications</h4>
+                        <h2 class="mb-0" id="notificationsCount">0</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-bell fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-4" id="patientTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+            <i class="fas fa-user"></i> Profile Overview
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="health-tab" data-bs-toggle="tab" data-bs-target="#health" type="button" role="tab">
+            <i class="fas fa-heartbeat"></i> Health Records
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#appointments" type="button" role="tab">
+            <i class="fas fa-calendar"></i> Appointments
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="prescriptions-tab" data-bs-toggle="tab" data-bs-target="#prescriptions" type="button" role="tab">
+            <i class="fas fa-pills"></i> Prescriptions
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="billing-tab" data-bs-toggle="tab" data-bs-target="#billing" type="button" role="tab">
+            <i class="fas fa-receipt"></i> Billing & Payments
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab">
+            <i class="fas fa-history"></i> Recent Activity
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="patientTabContent">
+    <!-- Profile Overview Tab -->
+    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Personal Information</h5>
+                    </div>
+                    <div class="card-body" id="personalInfo">
+                        <!-- Personal info will be populated here -->
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <button class="btn btn-outline-primary w-100" onclick="bookAppointment()">
+                                    <i class="fas fa-calendar-plus fa-2x mb-2"></i><br>
+                                    Book Appointment
+                                </button>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <button class="btn btn-outline-success w-100" onclick="viewPrescriptions()">
+                                    <i class="fas fa-pills fa-2x mb-2"></i><br>
+                                    View Prescriptions
+                                </button>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <button class="btn btn-outline-info w-100" onclick="viewLabResults()">
+                                    <i class="fas fa-flask fa-2x mb-2"></i><br>
+                                    Lab Results
+                                </button>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <button class="btn btn-outline-warning w-100" onclick="viewBilling()">
+                                    <i class="fas fa-receipt fa-2x mb-2"></i><br>
+                                    View Bills
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Records Tab -->
+    <div class="tab-pane fade" id="health" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Complete Health Records</h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="healthAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="vitalsHeader">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#vitalsCollapse">
+                                <i class="fas fa-heartbeat me-2"></i> Vital Signs
+                            </button>
+                        </h2>
+                        <div id="vitalsCollapse" class="accordion-collapse collapse show" data-bs-parent="#healthAccordion">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="vitalsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Blood Pressure</th>
+                                                <th>Heart Rate</th>
+                                                <th>Temperature</th>
+                                                <th>Weight</th>
+                                                <th>Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="vitalsTableBody">
+                                            <!-- Vitals will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="labHeader">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#labCollapse">
+                                <i class="fas fa-flask me-2"></i> Lab Results
+                            </button>
+                        </h2>
+                        <div id="labCollapse" class="accordion-collapse collapse" data-bs-parent="#healthAccordion">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="labResultsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Test Name</th>
+                                                <th>Type</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="labResultsTableBody">
+                                            <!-- Lab results will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointments Tab -->
+    <div class="tab-pane fade" id="appointments" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">My Appointments</h5>
+                <button class="btn btn-primary" onclick="bookAppointment()">
+                    <i class="fas fa-plus"></i> Book New Appointment
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="appointmentsTable">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Doctor</th>
+                                <th>Department</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="appointmentsTableBody">
+                            <!-- Appointments will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prescriptions Tab -->
+    <div class="tab-pane fade" id="prescriptions" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">My Prescriptions</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="prescriptionsTable">
+                        <thead>
+                            <tr>
+                                <th>Medication</th>
+                                <th>Dosage</th>
+                                <th>Instructions</th>
+                                <th>Frequency</th>
+                                <th>Status</th>
+                                <th>Doctor</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prescriptionsTableBody">
+                            <!-- Prescriptions will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Billing Tab -->
+    <div class="tab-pane fade" id="billing" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Billing & Payments</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="billingTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Service</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Payment Method</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="billingTableBody">
+                            <!-- Billing records will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Tab -->
+    <div class="tab-pane fade" id="activity" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline" id="activityTimeline">
+                    <!-- Activity timeline will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Book Appointment Modal -->
+<div class="modal fade" id="bookAppointmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Book Appointment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="appointmentForm">
+                    <div class="mb-3">
+                        <label for="appointmentDoctor" class="form-label">Select Doctor *</label>
+                        <select class="form-control" id="appointmentDoctor" name="doctor_id" required>
+                            <option value="">Choose a doctor...</option>
+                            <!-- Doctors will be populated here -->
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="appointmentDate" class="form-label">Preferred Date *</label>
+                        <input type="date" class="form-control" id="appointmentDate" name="appointment_date" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="appointmentTime" class="form-label">Preferred Time *</label>
+                        <input type="time" class="form-control" id="appointmentTime" name="appointment_time" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="appointmentDepartment" class="form-label">Department</label>
+                        <select class="form-control" id="appointmentDepartment" name="department">
+                            <option value="">Select Department</option>
+                            <option value="General">General</option>
+                            <option value="Cardiology">Cardiology</option>
+                            <option value="Pediatrics">Pediatrics</option>
+                            <option value="Emergency">Emergency</option>
+                            <option value="Surgery">Surgery</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="appointmentNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="appointmentNotes" name="notes" rows="3" 
+                                  placeholder="Describe your symptoms or reason for visit..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="bookAppointment()">
+                    <i class="fas fa-calendar-plus"></i> Book Appointment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Telemedicine Modal -->
+<div class="modal fade" id="telemedicineModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Telemedicine Session</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="telemedicineForm">
+                    <div class="mb-3">
+                        <label for="telemedicineDoctor" class="form-label">Select Doctor *</label>
+                        <select class="form-control" id="telemedicineDoctor" name="doctor_id" required>
+                            <option value="">Choose a doctor...</option>
+                            <!-- Doctors will be populated here -->
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="telemedicineDate" class="form-label">Session Date *</label>
+                        <input type="datetime-local" class="form-control" id="telemedicineDate" name="scheduled_time" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="telemedicineNotes" class="form-label">Session Notes</label>
+                        <textarea class="form-control" id="telemedicineNotes" name="notes" rows="3" 
+                                  placeholder="Describe your concerns for the telemedicine session..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info" onclick="scheduleTelemedicine()">
+                    <i class="fas fa-video"></i> Schedule Session
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Modal -->
+<div class="modal fade" id="feedbackModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Give Feedback</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="feedbackForm">
+                    <div class="mb-3">
+                        <label for="feedbackType" class="form-label">Feedback Type *</label>
+                        <select class="form-control" id="feedbackType" name="feedback_type" required>
+                            <option value="">Select Type</option>
+                            <option value="doctor">Doctor</option>
+                            <option value="staff">Staff</option>
+                            <option value="service">Service</option>
+                            <option value="overall">Overall Experience</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="feedbackRating" class="form-label">Rating *</label>
+                        <div class="rating">
+                            <input type="radio" id="star5" name="rating" value="5">
+                            <label for="star5">★</label>
+                            <input type="radio" id="star4" name="rating" value="4">
+                            <label for="star4">★</label>
+                            <input type="radio" id="star3" name="rating" value="3">
+                            <label for="star3">★</label>
+                            <input type="radio" id="star2" name="rating" value="2">
+                            <label for="star2">★</label>
+                            <input type="radio" id="star1" name="rating" value="1">
+                            <label for="star1">★</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="feedbackTitle" class="form-label">Title *</label>
+                        <input type="text" class="form-control" id="feedbackTitle" name="title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="feedbackText" class="form-label">Your Feedback *</label>
+                        <textarea class="form-control" id="feedbackText" name="feedback_text" rows="4" required 
+                                  placeholder="Please share your experience..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="submitFeedback()">
+                    <i class="fas fa-comment"></i> Submit Feedback
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let healthRecordsData = null;
+let appointmentsData = [];
+let prescriptionsData = [];
+let billingData = [];
+let notificationsData = [];
+
+// Load dashboard data
+function loadDashboardData() {
+    loadHealthRecords();
+    loadAppointments();
+    loadPrescriptions();
+    loadBilling();
+    loadNotifications();
+    updateQuickStats();
+}
+
+// Load health records
+function loadHealthRecords() {
+    fetch('/api/patient-health-records')
+        .then(response => response.json())
+        .then(data => {
+            healthRecordsData = data;
+            displayPersonalInfo(data.patient);
+            displayVitals(data.vitals);
+            displayLabResults(data.lab_results);
+            updateQuickStats();
+        })
+        .catch(error => {
+            console.error('Error loading health records:', error);
+        });
+}
+
+// Display personal information
+function displayPersonalInfo(patient) {
+    const personalInfo = document.getElementById('personalInfo');
+    personalInfo.innerHTML = `
+        <div class="row">
+            <div class="col-12">
+                <h6><strong>Patient ID:</strong> ${patient.patient_id}</h6>
+                <h6><strong>Name:</strong> ${patient.name}</h6>
+                <h6><strong>Email:</strong> ${patient.email || 'Not provided'}</h6>
+                <h6><strong>Phone:</strong> ${patient.phone || 'Not provided'}</h6>
+                <h6><strong>Date of Birth:</strong> ${patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString() : 'Not provided'}</h6>
+                <h6><strong>Gender:</strong> ${patient.gender || 'Not provided'}</h6>
+                <h6><strong>Insurance:</strong> ${patient.insurance_provider || 'Not provided'}</h6>
+                <h6><strong>Emergency Contact:</strong> ${patient.emergency_contact || 'Not provided'}</h6>
+            </div>
+        </div>
+    `;
+}
+
+// Display vitals
+function displayVitals(vitals) {
+    const tbody = document.getElementById('vitalsTableBody');
+    tbody.innerHTML = '';
+    
+    if (vitals.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No vital signs recorded</td></tr>';
+        return;
+    }
+    
+    vitals.forEach(vital => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${new Date(vital.recorded_at).toLocaleDateString()}</td>
+            <td>${vital.blood_pressure || '--'}</td>
+            <td>${vital.heart_rate || '--'}</td>
+            <td>${vital.temperature ? vital.temperature + '°F' : '--'}</td>
+            <td>${vital.weight ? vital.weight + ' lbs' : '--'}</td>
+            <td>${vital.notes || '--'}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Display lab results
+function displayLabResults(labResults) {
+    const tbody = document.getElementById('labResultsTableBody');
+    tbody.innerHTML = '';
+    
+    if (labResults.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No lab results available</td></tr>';
+        return;
+    }
+    
+    labResults.forEach(result => {
+        const row = document.createElement('tr');
+        const statusClass = result.status === 'completed' ? 'bg-success' : 
+                           result.status === 'abnormal' ? 'bg-danger' : 'bg-warning';
+        
+        row.innerHTML = `
+            <td>${new Date(result.created_at).toLocaleDateString()}</td>
+            <td>${result.test_name}</td>
+            <td>${result.test_type ? result.test_type.replace('_', ' ').toUpperCase() : '--'}</td>
+            <td><span class="badge ${statusClass}">${result.status.toUpperCase()}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewLabResult(${result.id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+                ${result.file_path ? `<button class="btn btn-sm btn-outline-success" onclick="downloadLabResult(${result.id})">
+                    <i class="fas fa-download"></i>
+                </button>` : ''}
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Load appointments
+function loadAppointments() {
+    if (healthRecordsData && healthRecordsData.appointments) {
+        appointmentsData = healthRecordsData.appointments;
+        displayAppointments(appointmentsData);
+    }
+}
+
+// Display appointments
+function displayAppointments(appointments) {
+    const tbody = document.getElementById('appointmentsTableBody');
+    tbody.innerHTML = '';
+    
+    if (appointments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No appointments found</td></tr>';
+        return;
+    }
+    
+    appointments.forEach(appointment => {
+        const row = document.createElement('tr');
+        const statusClass = appointment.status === 'scheduled' ? 'bg-primary' : 
+                           appointment.status === 'completed' ? 'bg-success' : 'bg-warning';
+        
+        row.innerHTML = `
+            <td>${new Date(appointment.appointment_time).toLocaleString()}</td>
+            <td>${appointment.doctor_name}</td>
+            <td>${appointment.department || '--'}</td>
+            <td><span class="badge ${statusClass}">${appointment.status.toUpperCase()}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-warning" onclick="rescheduleAppointment(${appointment.id})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="cancelAppointment(${appointment.id})">
+                    <i class="fas fa-times"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Load prescriptions
+function loadPrescriptions() {
+    if (healthRecordsData && healthRecordsData.prescriptions) {
+        prescriptionsData = healthRecordsData.prescriptions;
+        displayPrescriptions(prescriptionsData);
+    }
+}
+
+// Display prescriptions
+function displayPrescriptions(prescriptions) {
+    const tbody = document.getElementById('prescriptionsTableBody');
+    tbody.innerHTML = '';
+    
+    if (prescriptions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No prescriptions found</td></tr>';
+        return;
+    }
+    
+    prescriptions.forEach(prescription => {
+        const row = document.createElement('tr');
+        const statusClass = prescription.status === 'active' ? 'bg-success' : 
+                           prescription.status === 'completed' ? 'bg-info' : 'bg-warning';
+        
+        row.innerHTML = `
+            <td>${prescription.medication}</td>
+            <td>${prescription.dosage || '--'}</td>
+            <td>${prescription.instructions || '--'}</td>
+            <td>${prescription.frequency || '--'}</td>
+            <td><span class="badge ${statusClass}">${prescription.status.toUpperCase()}</span></td>
+            <td>${prescription.doctor_name}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewPrescription(${prescription.id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Load billing
+function loadBilling() {
+    if (healthRecordsData && healthRecordsData.billing) {
+        billingData = healthRecordsData.billing;
+        displayBilling(billingData);
+    }
+}
+
+// Display billing
+function displayBilling(billing) {
+    const tbody = document.getElementById('billingTableBody');
+    tbody.innerHTML = '';
+    
+    if (billing.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No billing records found</td></tr>';
+        return;
+    }
+    
+    billing.forEach(bill => {
+        const row = document.createElement('tr');
+        const statusClass = bill.status === 'paid' ? 'bg-success' : 
+                           bill.status === 'pending' ? 'bg-warning' : 'bg-danger';
+        
+        row.innerHTML = `
+            <td>${new Date(bill.created_at).toLocaleDateString()}</td>
+            <td>${bill.service_type}</td>
+            <td>$${bill.amount}</td>
+            <td><span class="badge ${statusClass}">${bill.status.toUpperCase()}</span></td>
+            <td>${bill.payment_method || '--'}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewBill(${bill.id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="downloadReceipt(${bill.id})">
+                    <i class="fas fa-download"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Load notifications
+function loadNotifications() {
+    fetch('/api/patient-notifications')
+        .then(response => response.json())
+        .then(data => {
+            notificationsData = data;
+            updateQuickStats();
+        })
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+        });
+}
+
+// Update quick stats
+function updateQuickStats() {
+    if (healthRecordsData) {
+        const upcomingAppointments = healthRecordsData.appointments ? 
+            healthRecordsData.appointments.filter(apt => apt.status === 'scheduled').length : 0;
+        const activePrescriptions = healthRecordsData.prescriptions ? 
+            healthRecordsData.prescriptions.filter(p => p.status === 'active').length : 0;
+        const labResults = healthRecordsData.lab_results ? healthRecordsData.lab_results.length : 0;
+        
+        document.getElementById('upcomingAppointmentsCount').textContent = upcomingAppointments;
+        document.getElementById('activePrescriptionsCount').textContent = activePrescriptions;
+        document.getElementById('labResultsCount').textContent = labResults;
+    }
+    
+    document.getElementById('notificationsCount').textContent = notificationsData.length;
+}
+
+// Action functions
+function bookAppointment() {
+    const modal = new bootstrap.Modal(document.getElementById('bookAppointmentModal'));
+    modal.show();
+}
+
+function viewPrescriptions() {
+    document.getElementById('prescriptions-tab').click();
+}
+
+function viewLabResults() {
+    document.getElementById('health-tab').click();
+}
+
+function viewBilling() {
+    document.getElementById('billing-tab').click();
+}
+
+function rescheduleAppointment(appointmentId) {
+    alert('Reschedule appointment: ' + appointmentId);
+}
+
+function cancelAppointment(appointmentId) {
+    if (confirm('Are you sure you want to cancel this appointment?')) {
+        alert('Cancel appointment: ' + appointmentId);
+    }
+}
+
+function viewPrescription(prescriptionId) {
+    alert('View prescription: ' + prescriptionId);
+}
+
+function viewLabResult(resultId) {
+    alert('View lab result: ' + resultId);
+}
+
+function downloadLabResult(resultId) {
+    alert('Download lab result: ' + resultId);
+}
+
+function viewBill(billId) {
+    alert('View bill: ' + billId);
+}
+
+function downloadReceipt(billId) {
+    alert('Download receipt: ' + billId);
+}
+
+function scheduleTelemedicine() {
+    const modal = new bootstrap.Modal(document.getElementById('telemedicineModal'));
+    modal.show();
+}
+
+function submitFeedback() {
+    const form = document.getElementById('feedbackForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    fetch('/api/patient-feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.msg) {
+            alert('Feedback submitted successfully!');
+            form.reset();
+            bootstrap.Modal.getInstance(document.getElementById('feedbackModal')).hide();
+        } else {
+            alert('Error: ' + result.msg);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    });
+}
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+    
+    // Set default date to tomorrow for appointment booking
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('appointmentDate').value = tomorrow.toISOString().split('T')[0];
+    
+    // Set default time to 2 hours from now for telemedicine
+    const twoHoursLater = new Date();
+    twoHoursLater.setHours(twoHoursLater.getHours() + 2);
+    document.getElementById('telemedicineDate').value = twoHoursLater.toISOString().slice(0, 16);
+});
+
+// Auto-refresh every 30 seconds
+setInterval(loadDashboardData, 30000);
+</script>
+
+<style>
+.rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.rating input {
+    display: none;
+}
+
+.rating label {
+    font-size: 2rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.rating label:hover,
+.rating label:hover ~ label,
+.rating input:checked ~ label {
+    color: #ffc107;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+    padding-left: 20px;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #007bff;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #007bff;
+}
+</style>
+
+<!-- Floating Chatbot for Patients -->
+<div id="floatingChatbot" class="floating-chatbot">
+    <div id="chatbotToggle" class="chatbot-toggle">
+        <i class="fas fa-robot"></i>
+    </div>
+    <div id="chatbotWindow" class="chatbot-window" style="display: none;">
+        <div class="chatbot-header">
+            <h6 class="mb-0">
+                <i class="fas fa-robot me-2"></i>HealthSync Assistant
+            </h6>
+            <button id="chatbotClose" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="chatbot-body">
+            <div id="chatbotMessages" class="chatbot-messages">
+                <div class="chatbot-message bot-message">
+                    <div class="message-content">
+                        <p>Hello! I'm your HealthSync assistant. I can help you with:</p>
+                        <ul class="mb-0">
+                            <li>Booking appointments</li>
+                            <li>Understanding prescriptions</li>
+                            <li>Accessing health records</li>
+                            <li>Billing questions</li>
+                            <li>General HealthSync features</li>
+                        </ul>
+                        <p class="mb-0">How can I assist you today? 🤖</p>
+                    </div>
+                </div>
+            </div>
+            <div class="chatbot-input">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="floatingChatInput" 
+                           placeholder="Ask me about HealthSync features..." 
+                           onkeypress="handleFloatingChatKeyPress(event)">
+                    <button class="btn btn-primary" onclick="sendFloatingChatMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="quick-actions mt-2">
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="sendQuickMessage('How do I book an appointment?')">
+                        Book Appointment
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="sendQuickMessage('How do I view my prescriptions?')">
+                        View Prescriptions
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="sendQuickMessage('How do I access my health records?')">
+                        Health Records
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Floating Chatbot functionality
+let currentChatSession = null;
+
+document.getElementById('chatbotToggle').addEventListener('click', function() {
+    const chatbotWindow = document.getElementById('chatbotWindow');
+    if (chatbotWindow.style.display === 'none') {
+        chatbotWindow.style.display = 'block';
+        initializeChatbot();
+    } else {
+        chatbotWindow.style.display = 'none';
+    }
+});
+
+document.getElementById('chatbotClose').addEventListener('click', function() {
+    document.getElementById('chatbotWindow').style.display = 'none';
+});
+
+function initializeChatbot() {
+    if (!currentChatSession) {
+        // Create new chat session
+        fetch('/api/chatbot', {
+            method: 'GET'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.session_id) {
+                currentChatSession = data.session_id;
+            }
+        })
+        .catch(error => {
+            console.error('Error initializing chatbot:', error);
+        });
+    }
+}
+
+function sendFloatingChatMessage() {
+    const input = document.getElementById('floatingChatInput');
+    const message = input.value.trim();
+    if (message) {
+        sendChatMessage(message);
+        input.value = '';
+    }
+}
+
+function sendQuickMessage(message) {
+    sendChatMessage(message);
+}
+
+function handleFloatingChatKeyPress(event) {
+    if (event.key === 'Enter') {
+        sendFloatingChatMessage();
+    }
+}
+
+function sendChatMessage(message) {
+    if (!currentChatSession) {
+        initializeChatbot();
+        setTimeout(() => sendChatMessage(message), 1000);
+        return;
+    }
+
+    // Add user message to chat
+    addMessageToChat(message, 'user');
+    
+    // Send to backend
+    fetch('/api/chatbot', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            session_id: currentChatSession,
+            message: message
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.response) {
+            addMessageToChat(data.response, 'bot');
+        } else if (data.msg) {
+            addMessageToChat(data.msg, 'bot');
+        }
+    })
+    .catch(error => {
+        console.error('Error sending message:', error);
+        addMessageToChat('Sorry, I encountered an error. Please try again.', 'bot');
+    });
+}
+
+function addMessageToChat(message, sender) {
+    const messagesContainer = document.getElementById('chatbotMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chatbot-message ${sender}-message`;
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    contentDiv.innerHTML = `<p class="mb-0">${message}</p>`;
+    
+    messageDiv.appendChild(contentDiv);
+    messagesContainer.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Initialize chatbot when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeChatbot();
+});
+</script>
+
+<style>
+.floating-chatbot {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.chatbot-toggle {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+}
+
+.chatbot-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+.chatbot-toggle i {
+    color: white;
+    font-size: 24px;
+}
+
+.chatbot-window {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    width: 350px;
+    height: 500px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+}
+
+.chatbot-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chatbot-body {
+    height: calc(100% - 60px);
+    display: flex;
+    flex-direction: column;
+}
+
+.chatbot-messages {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    max-height: 350px;
+}
+
+.chatbot-message {
+    margin-bottom: 15px;
+    display: flex;
+}
+
+.user-message {
+    justify-content: flex-end;
+}
+
+.bot-message {
+    justify-content: flex-start;
+}
+
+.message-content {
+    max-width: 80%;
+    padding: 10px 15px;
+    border-radius: 18px;
+    word-wrap: break-word;
+}
+
+.user-message .message-content {
+    background: #007bff;
+    color: white;
+    border-bottom-right-radius: 5px;
+}
+
+.bot-message .message-content {
+    background: #f8f9fa;
+    color: #333;
+    border: 1px solid #e9ecef;
+    border-bottom-left-radius: 5px;
+}
+
+.chatbot-input {
+    padding: 15px;
+    border-top: 1px solid #e0e0e0;
+    background: #f8f9fa;
+}
+
+.quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.quick-actions .btn {
+    font-size: 11px;
+    padding: 4px 8px;
+}
+
+@media (max-width: 768px) {
+    .chatbot-window {
+        width: 300px;
+        height: 400px;
+    }
+    
+    .floating-chatbot {
+        bottom: 10px;
+        right: 10px;
+    }
+}
+</style>
+{% endblock %}

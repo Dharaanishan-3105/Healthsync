@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+
+{% block title %}Medication Administration - HealthSync{% endblock %}
+{% block page_title %}Medication Administration{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Medication Administration</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#administerMedicationModal">
+        <i class="fas fa-pills"></i> Administer Medication
+    </button>
+</div>
+
+<!-- Patient Selection -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <label for="patientSelect" class="form-label">Select Patient</label>
+                <select class="form-control" id="patientSelect" onchange="loadPatientPrescriptions()">
+                    <option value="">Choose a patient...</option>
+                    {% for patient in patients %}
+                    <option value="{{ patient.id }}">{{ patient.patient_id }} - {{ patient.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="statusFilter" class="form-label">Filter by Status</label>
+                <select class="form-control" id="statusFilter" onchange="filterAdministrations()">
+                    <option value="">All Status</option>
+                    <option value="administered">Administered</option>
+                    <option value="missed">Missed</option>
+                    <option value="refused">Refused</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Prescriptions -->
+<div class="card mb-4" id="activePrescriptions" style="display: none;">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-prescription-bottle"></i> Active Prescriptions
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="prescriptionsTable">
+                <thead>
+                    <tr>
+                        <th>Medication</th>
+                        <th>Dosage</th>
+                        <th>Instructions</th>
+                        <th>Frequency</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="prescriptionsTableBody">
+                    <!-- Prescriptions will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Administration History -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-history"></i> Administration History
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="administrationTable">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Patient</th>
+                        <th>Medication</th>
+                        <th>Dosage</th>
+                        <th>Status</th>
+                        <th>Administered By</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="administrationTableBody">
+                    <!-- Administration records will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Administer Medication Modal -->
+<div class="modal fade" id="administerMedicationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Administer Medication</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="administrationForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="adminPatient" class="form-label">Patient *</label>
+                                <select class="form-control" id="adminPatient" name="patient_id" required onchange="loadPatientPrescriptionsForAdmin()">
+                                    <option value="">Select Patient</option>
+                                    {% for patient in patients %}
+                                    <option value="{{ patient.id }}">{{ patient.patient_id }} - {{ patient.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="prescriptionSelect" class="form-label">Prescription *</label>
+                                <select class="form-control" id="prescriptionSelect" name="prescription_id" required>
+                                    <option value="">Select Prescription</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="medicationName" class="form-label">Medication</label>
+                                <input type="text" class="form-control" id="medicationName" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="medicationDosage" class="form-label">Dosage</label>
+                                <input type="text" class="form-control" id="medicationDosage" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="administrationStatus" class="form-label">Status *</label>
+                        <select class="form-control" id="administrationStatus" name="status" required>
+                            <option value="administered">Administered</option>
+                            <option value="missed">Missed</option>
+                            <option value="refused">Refused</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="administrationNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="administrationNotes" name="notes" rows="3" 
+                                  placeholder="Any observations or notes about the administration..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="administerMedication()">
+                    <i class="fas fa-save"></i> Record Administration
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPatientId = null;
+let prescriptionsData = [];
+let administrationData = [];
+
+// Load patient prescriptions when patient is selected
+function loadPatientPrescriptions() {
+    currentPatientId = document.getElementById('patientSelect').value;
+    if (!currentPatientId) {
+        document.getElementById('activePrescriptions').style.display = 'none';
+        return;
+    }
+    
+    fetch(`/api/prescriptions?patient_id=${currentPatientId}`)
+        .then(response => response.json())
+        .then(data => {
+            prescriptionsData = data.filter(p => p.status === 'active');
+            displayPrescriptions(prescriptionsData);
+            loadAdministrationHistory();
+        })
+        .catch(error => {
+            console.error('Error loading prescriptions:', error);
+            alert('Error loading patient prescriptions');
+        });
+}
+
+// Load prescriptions for administration modal
+function loadPatientPrescriptionsForAdmin() {
+    const patientId = document.getElementById('adminPatient').value;
+    const prescriptionSelect = document.getElementById('prescriptionSelect');
+    
+    prescriptionSelect.innerHTML = '<option value="">Select Prescription</option>';
+    
+    if (!patientId) return;
+    
+    fetch(`/api/prescriptions?patient_id=${patientId}`)
+        .then(response => response.json())
+        .then(data => {
+            const activePrescriptions = data.filter(p => p.status === 'active');
+            activePrescriptions.forEach(prescription => {
+                const option = document.createElement('option');
+                option.value = prescription.id;
+                option.textContent = `${prescription.medication} - ${prescription.dosage}`;
+                option.dataset.medication = prescription.medication;
+                option.dataset.dosage = prescription.dosage;
+                prescriptionSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading prescriptions:', error);
+        });
+}
+
+// Update medication details when prescription is selected
+document.getElementById('prescriptionSelect').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    if (selectedOption.value) {
+        document.getElementById('medicationName').value = selectedOption.dataset.medication;
+        document.getElementById('medicationDosage').value = selectedOption.dataset.dosage;
+    } else {
+        document.getElementById('medicationName').value = '';
+        document.getElementById('medicationDosage').value = '';
+    }
+});
+
+// Display active prescriptions
+function displayPrescriptions(prescriptions) {
+    const tbody = document.getElementById('prescriptionsTableBody');
+    tbody.innerHTML = '';
+    
+    if (prescriptions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No active prescriptions found</td></tr>';
+        document.getElementById('activePrescriptions').style.display = 'none';
+        return;
+    }
+    
+    prescriptions.forEach(prescription => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${prescription.medication}</td>
+            <td>${prescription.dosage || '--'}</td>
+            <td>${prescription.instructions || '--'}</td>
+            <td>${prescription.frequency || '--'}</td>
+            <td><span class="badge bg-success">Active</span></td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="quickAdminister(${prescription.id}, '${prescription.medication}', '${prescription.dosage}')">
+                    <i class="fas fa-pills"></i> Administer
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    document.getElementById('activePrescriptions').style.display = 'block';
+}
+
+// Load administration history
+function loadAdministrationHistory() {
+    if (!currentPatientId) {
+        document.getElementById('administrationTableBody').innerHTML = '';
+        return;
+    }
+    
+    fetch(`/api/medication-administration?patient_id=${currentPatientId}`)
+        .then(response => response.json())
+        .then(data => {
+            administrationData = data;
+            displayAdministrationHistory(data);
+        })
+        .catch(error => {
+            console.error('Error loading administration history:', error);
+        });
+}
+
+// Display administration history
+function displayAdministrationHistory(administrations) {
+    const tbody = document.getElementById('administrationTableBody');
+    tbody.innerHTML = '';
+    
+    if (administrations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No administration records found</td></tr>';
+        return;
+    }
+    
+    administrations.forEach(admin => {
+        const row = document.createElement('tr');
+        const statusClass = admin.status === 'administered' ? 'bg-success' : 
+                           admin.status === 'missed' ? 'bg-warning' : 'bg-danger';
+        
+        row.innerHTML = `
+            <td>${new Date(admin.administered_at).toLocaleString()}</td>
+            <td>${admin.patient_name}</td>
+            <td>${admin.medication}</td>
+            <td>${admin.dosage || '--'}</td>
+            <td><span class="badge ${statusClass}">${admin.status}</span></td>
+            <td>${admin.administered_by}</td>
+            <td>${admin.notes || '--'}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewAdministrationDetails(${admin.id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Quick administer medication
+function quickAdminister(prescriptionId, medication, dosage) {
+    document.getElementById('adminPatient').value = currentPatientId;
+    document.getElementById('prescriptionSelect').value = prescriptionId;
+    document.getElementById('medicationName').value = medication;
+    document.getElementById('medicationDosage').value = dosage;
+    document.getElementById('administrationStatus').value = 'administered';
+    
+    const modal = new bootstrap.Modal(document.getElementById('administerMedicationModal'));
+    modal.show();
+}
+
+// Administer medication
+async function administerMedication() {
+    const form = document.getElementById('administrationForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/medication-administration', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Medication administration recorded successfully!');
+            document.getElementById('administrationForm').reset();
+            bootstrap.Modal.getInstance(document.getElementById('administerMedicationModal')).hide();
+            loadPatientPrescriptions(); // Refresh the data
+        } else {
+            alert('Error: ' + result.msg);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function viewAdministrationDetails(adminId) {
+    // Implementation for viewing administration details
+    alert('View administration details: ' + adminId);
+}
+
+function filterAdministrations() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    if (!statusFilter) {
+        displayAdministrationHistory(administrationData);
+        return;
+    }
+    
+    const filtered = administrationData.filter(admin => 
+        admin.status === statusFilter
+    );
+    displayAdministrationHistory(filtered);
+}
+
+// Load all administration history on page load
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/medication-administration')
+        .then(response => response.json())
+        .then(data => {
+            administrationData = data;
+            displayAdministrationHistory(data);
+        })
+        .catch(error => {
+            console.error('Error loading administration history:', error);
+        });
+});
+</script>
+{% endblock %}

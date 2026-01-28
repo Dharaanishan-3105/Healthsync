@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}Lab Results - HealthSync{% endblock %}
+{% block page_title %}Lab Test Results{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Lab Test Management</h2>
+    {% if current_role in ['admin', 'lab_assistant'] %}
+    <div>
+        <button class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#uploadResultModal">
+            <i class="fas fa-upload"></i> Upload Results
+        </button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLabResultModal">
+            <i class="fas fa-plus"></i> Add Test Request
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="searchLabResults" placeholder="Search lab results...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-control" id="filterStatus">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                    <option value="reviewed">Reviewed</option>
+                    <option value="urgent">Urgent</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-control" id="filterTestType">
+                    <option value="">All Test Types</option>
+                    <option value="Blood Test">Blood Test</option>
+                    <option value="Urine Test">Urine Test</option>
+                    <option value="X-Ray">X-Ray</option>
+                    <option value="MRI">MRI</option>
+                    <option value="CT Scan">CT Scan</option>
+                    <option value="Biopsy">Biopsy</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" class="form-control" id="filterDate">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Test Name</th>
+                        <th>Test Type</th>
+                        <th>Status</th>
+                        <th>Uploaded By</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lab_result in lab_results %}
+                    <tr>
+                        <td>{{ lab_result.patient.name if lab_result.patient else 'N/A' }}</td>
+                        <td>{{ lab_result.test_name }}</td>
+                        <td>{{ lab_result.test_type or 'N/A' }}</td>
+                        <td>
+                            {% if lab_result.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                            {% elif lab_result.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% elif lab_result.status == 'in_progress' %}
+                                <span class="badge bg-info">In Progress</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ lab_result.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ lab_result.uploaded_by_user.full_name if lab_result.uploaded_by_user else 'N/A' }}</td>
+                        <td>{{ lab_result.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewLabResult({{ lab_result.id }})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            {% if current_role in ['admin', 'lab_assistant'] %}
+                            <button class="btn btn-sm btn-outline-warning" onclick="editLabResult({{ lab_result.id }})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            {% endif %}
+                            {% if lab_result.file_path %}
+                            <button class="btn btn-sm btn-outline-success" onclick="downloadFile('{{ lab_result.file_path }}')">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Lab Result Modal -->
+{% if current_role in ['admin', 'lab_assistant'] %}
+<div class="modal fade" id="uploadResultModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Lab Results</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadResultForm" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="upload_patient_id" class="form-label">Patient *</label>
+                                <select class="form-control" id="upload_patient_id" name="patient_id" required>
+                                    <option value="">Select Patient</option>
+                                    <!-- Patients will be populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="upload_test_name" class="form-label">Test Name *</label>
+                                <input type="text" class="form-control" id="upload_test_name" name="test_name" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="upload_test_type" class="form-label">Test Type *</label>
+                                <select class="form-control" id="upload_test_type" name="test_type" required>
+                                    <option value="">Select Test Type</option>
+                                    <option value="Blood Test">Blood Test</option>
+                                    <option value="Urine Test">Urine Test</option>
+                                    <option value="X-Ray">X-Ray</option>
+                                    <option value="MRI">MRI</option>
+                                    <option value="CT Scan">CT Scan</option>
+                                    <option value="Biopsy">Biopsy</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="upload_priority" class="form-label">Priority</label>
+                                <select class="form-control" id="upload_priority" name="priority">
+                                    <option value="normal">Normal</option>
+                                    <option value="urgent">Urgent</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="upload_file" class="form-label">Upload Result File *</label>
+                        <input type="file" class="form-control" id="upload_file" name="result_file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                        <small class="form-text text-muted">Supported formats: PDF, JPG, PNG, DOC, DOCX</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="upload_results" class="form-label">Test Results *</label>
+                        <textarea class="form-control" id="upload_results" name="results" rows="4" 
+                                  placeholder="Enter detailed test results..." required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="upload_notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="upload_notes" name="notes" rows="3" 
+                                  placeholder="Additional notes or observations..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="uploadLabResult()">
+                    <i class="fas fa-upload"></i> Upload Results
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Lab Result Modal -->
+<div class="modal fade" id="addLabResultModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Lab Test Result</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addLabResultForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patient_id" class="form-label">Patient *</label>
+                                <select class="form-control" id="patient_id" name="patient_id" required>
+                                    <option value="">Select Patient</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="test_name" class="form-label">Test Name *</label>
+                                <input type="text" class="form-control" id="test_name" name="test_name" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="test_type" class="form-label">Test Type</label>
+                                <select class="form-control" id="test_type" name="test_type">
+                                    <option value="Blood Test">Blood Test</option>
+                                    <option value="Urine Test">Urine Test</option>
+                                    <option value="Imaging">Imaging</option>
+                                    <option value="Cardiac Test">Cardiac Test</option>
+                                    <option value="Biopsy">Biopsy</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-control" id="status" name="status">
+                                    <option value="pending">Pending</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="results" class="form-label">Test Results</label>
+                        <textarea class="form-control" id="results" name="results" rows="4" placeholder="Enter test results here..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="file_path" class="form-label">File Path (Optional)</label>
+                        <input type="text" class="form-control" id="file_path" name="file_path" placeholder="Path to uploaded file">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addLabResult()">Upload Result</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function addLabResult() {
+    const form = document.getElementById('addLabResultForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/lab-results', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Lab result uploaded successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + result.msg);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function viewLabResult(labResultId) {
+    alert('View lab result: ' + labResultId);
+}
+
+function editLabResult(labResultId) {
+    alert('Edit lab result: ' + labResultId);
+}
+
+function downloadFile(filePath) {
+    // Create a temporary link to download the file
+    const link = document.createElement('a');
+    link.href = filePath;
+    link.download = filePath.split('/').pop();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+async function uploadLabResult() {
+    const form = document.getElementById('uploadResultForm');
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('/api/lab-results/upload', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            }
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Lab results uploaded successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + result.msg);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function filterLabResults() {
+    const searchTerm = document.getElementById('searchLabResults').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatus').value;
+    const testTypeFilter = document.getElementById('filterTestType').value;
+    const dateFilter = document.getElementById('filterDate').value;
+    
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const patient = row.cells[0].textContent.toLowerCase();
+        const testName = row.cells[1].textContent.toLowerCase();
+        const testType = row.cells[2].textContent;
+        const status = row.cells[3].textContent.toLowerCase();
+        const date = row.cells[5].textContent;
+        
+        const matchesSearch = patient.includes(searchTerm) || testName.includes(searchTerm);
+        const matchesStatus = !statusFilter || status.includes(statusFilter);
+        const matchesTestType = !testTypeFilter || testType.includes(testTypeFilter);
+        const matchesDate = !dateFilter || date.includes(dateFilter);
+        
+        if (matchesSearch && matchesStatus && matchesTestType && matchesDate) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('searchLabResults').addEventListener('input', filterLabResults);
+    document.getElementById('filterStatus').addEventListener('change', filterLabResults);
+    document.getElementById('filterTestType').addEventListener('change', filterLabResults);
+    document.getElementById('filterDate').addEventListener('change', filterLabResults);
+    
+    // Load patients for upload modal
+    loadPatientsForUpload();
+});
+
+async function loadPatientsForUpload() {
+    try {
+        const response = await fetch('/api/patients');
+        const patients = await response.json();
+        
+        const select = document.getElementById('upload_patient_id');
+        patients.forEach(patient => {
+            const option = document.createElement('option');
+            option.value = patient.id;
+            option.textContent = `${patient.patient_id} - ${patient.name}`;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.log('Error loading patients:', error);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - HealthSync</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .logo-section {
+            background: linear-gradient(135deg, #00d4aa 0%, #00a8cc 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        .login-form {
+            padding: 40px;
+        }
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+        }
+        .form-control:focus {
+            border-color: #00d4aa;
+            box-shadow: 0 0 0 0.2rem rgba(0, 212, 170, 0.25);
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #00d4aa 0%, #00a8cc 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+        }
+        .role-demo {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .role-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .role-item:last-child {
+            border-bottom: none;
+        }
+        .role-badge {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="login-card">
+                    <div class="logo-section">
+                        <div class="logo">
+                            <img src="{{ url_for('static', filename='logo.png') }}" alt="HealthSync Logo" style="width: 80px; height: 80px; margin-bottom: 15px;">
+                        </div>
+                        <h2 class="fw-bold mb-0">HealthSync</h2>
+                        <p class="mb-0">Smart Hospital Management System</p>
+                    </div>
+                    
+                    <div class="login-form">
+                        <form method="POST" id="loginForm">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-login w-100 mb-3">
+                                <i class="fas fa-sign-in-alt"></i> Login to HealthSync
+                            </button>
+                        </form>
+                        
+                        <div class="role-demo">
+                            <h6 class="fw-bold mb-3">Demo Login Credentials:</h6>
+                            <div class="role-item">
+                                <div>
+                                    <strong>Admin</strong><br>
+                                    <small class="text-muted">Full system access</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-danger role-badge">admin@healthsync.com</span><br>
+                                    <small class="text-muted">admin123</small>
+                                </div>
+                            </div>
+                            <div class="role-item">
+                                <div>
+                                    <strong>Doctor</strong><br>
+                                    <small class="text-muted">Patient care & prescriptions</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-primary role-badge">doctor@healthsync.com</span><br>
+                                    <small class="text-muted">doctor123</small>
+                                </div>
+                            </div>
+                            <div class="role-item">
+                                <div>
+                                    <strong>Nurse</strong><br>
+                                    <small class="text-muted">Patient monitoring</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-success role-badge">nurse@healthsync.com</span><br>
+                                    <small class="text-muted">nurse123</small>
+                                </div>
+                            </div>
+                            <div class="role-item">
+                                <div>
+                                    <strong>Pharmacy Nurse</strong><br>
+                                    <small class="text-muted">Medication dispensing</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-warning role-badge">pharmacy@healthsync.com</span><br>
+                                    <small class="text-muted">pharmacy123</small>
+                                </div>
+                            </div>
+                            <div class="role-item">
+                                <div>
+                                    <strong>Lab Assistant</strong><br>
+                                    <small class="text-muted">Test results</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-info role-badge">lab@healthsync.com</span><br>
+                                    <small class="text-muted">lab123</small>
+                                </div>
+                            </div>
+                            <div class="role-item">
+                                <div>
+                                    <strong>Receptionist</strong><br>
+                                    <small class="text-muted">Appointments & billing</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-secondary role-badge">receptionist@healthsync.com</span><br>
+                                    <small class="text-muted">receptionist123</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    window.location.href = result.redirect || '/dashboard';
+                } else {
+                    alert(result.msg || 'Login failed');
+                }
+            } catch (error) {
+                alert('Login failed: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

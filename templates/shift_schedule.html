@@ -1,0 +1,451 @@
+{% extends "base.html" %}
+
+{% block title %}Shift Schedule - HealthSync{% endblock %}
+{% block page_title %}Shift Schedule{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Shift Schedule Management</h2>
+    {% if current_user.role in ['admin', 'doctor'] %}
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createShiftModal">
+        <i class="fas fa-plus"></i> Create Shift
+    </button>
+    {% endif %}
+</div>
+
+<!-- Current Shift Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-primary text-white">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-clock"></i> Current Shift Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h6>Today's Shift</h6>
+                        <h4 id="currentShift">Loading...</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Shift Type</h6>
+                        <h4 id="currentShiftType">--</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Time</h6>
+                        <h4 id="currentShiftTime">--</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Status</h6>
+                        <h4 id="currentShiftStatus">--</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="userFilter" class="form-label">Filter by User</label>
+                <select class="form-control" id="userFilter" onchange="filterSchedules()">
+                    <option value="">All Users</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.full_name }} ({{ user.role }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="dateFilter" class="form-label">Filter by Date</label>
+                <input type="date" class="form-control" id="dateFilter" onchange="filterSchedules()">
+            </div>
+            <div class="col-md-3">
+                <label for="shiftTypeFilter" class="form-label">Filter by Shift Type</label>
+                <select class="form-control" id="shiftTypeFilter" onchange="filterSchedules()">
+                    <option value="">All Shifts</option>
+                    <option value="morning">Morning</option>
+                    <option value="afternoon">Afternoon</option>
+                    <option value="night">Night</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="statusFilter" class="form-label">Filter by Status</label>
+                <select class="form-control" id="statusFilter" onchange="filterSchedules()">
+                    <option value="">All Status</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Shift Schedule Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-calendar-alt"></i> Shift Schedules
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="schedulesTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>User</th>
+                        <th>Shift Type</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>Responsibilities</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="schedulesTableBody">
+                    <!-- Schedules will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Create Shift Modal -->
+<div class="modal fade" id="createShiftModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Shift Schedule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="shiftForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="shiftUser" class="form-label">User *</label>
+                                <select class="form-control" id="shiftUser" name="user_id" required>
+                                    <option value="">Select User</option>
+                                    {% for user in users %}
+                                    {% if user.role in ['doctor', 'nurse'] %}
+                                    <option value="{{ user.id }}">{{ user.full_name }} ({{ user.role }})</option>
+                                    {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="shiftDate" class="form-label">Shift Date *</label>
+                                <input type="date" class="form-control" id="shiftDate" name="shift_date" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="shiftType" class="form-label">Shift Type *</label>
+                                <select class="form-control" id="shiftType" name="shift_type" required>
+                                    <option value="">Select Shift Type</option>
+                                    <option value="morning">Morning (6:00 AM - 2:00 PM)</option>
+                                    <option value="afternoon">Afternoon (2:00 PM - 10:00 PM)</option>
+                                    <option value="night">Night (10:00 PM - 6:00 AM)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="startTime" class="form-label">Start Time *</label>
+                                <input type="time" class="form-control" id="startTime" name="start_time" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="endTime" class="form-label">End Time *</label>
+                                <input type="time" class="form-control" id="endTime" name="end_time" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="department" class="form-label">Department</label>
+                                <select class="form-control" id="department" name="department">
+                                    <option value="">Select Department</option>
+                                    <option value="Emergency">Emergency</option>
+                                    <option value="ICU">ICU</option>
+                                    <option value="Surgery">Surgery</option>
+                                    <option value="Cardiology">Cardiology</option>
+                                    <option value="Pediatrics">Pediatrics</option>
+                                    <option value="General Ward">General Ward</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="shiftStatus" class="form-label">Status</label>
+                                <select class="form-control" id="shiftStatus" name="status">
+                                    <option value="scheduled">Scheduled</option>
+                                    <option value="active">Active</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="responsibilities" class="form-label">Responsibilities</label>
+                        <textarea class="form-control" id="responsibilities" name="responsibilities" rows="4" 
+                                  placeholder="List the main responsibilities for this shift..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createShift()">
+                    <i class="fas fa-save"></i> Create Shift
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let schedulesData = [];
+let currentUserId = {{ current_user.id if current_user and current_user.id else 'null' }};
+
+// Debug logging
+console.log('Current User ID:', currentUserId);
+console.log('Current User Object:', {
+    id: {{ current_user.id if current_user and current_user.id else 'null' }},
+    name: "{{ current_user.full_name if current_user and current_user.full_name else 'Unknown' }}",
+    role: "{{ current_user.role if current_user and current_user.role else 'Unknown' }}"
+});
+
+// Auto-fill time based on shift type
+document.getElementById('shiftType').addEventListener('change', function() {
+    const shiftType = this.value;
+    const startTime = document.getElementById('startTime');
+    const endTime = document.getElementById('endTime');
+    
+    switch(shiftType) {
+        case 'morning':
+            startTime.value = '06:00';
+            endTime.value = '14:00';
+            break;
+        case 'afternoon':
+            startTime.value = '14:00';
+            endTime.value = '22:00';
+            break;
+        case 'night':
+            startTime.value = '22:00';
+            endTime.value = '06:00';
+            break;
+    }
+});
+
+// Load current shift status
+function loadCurrentShiftStatus() {
+    if (!currentUserId || currentUserId === 'null') {
+        console.log('No current user ID available for shift status');
+        document.getElementById('currentShift').textContent = 'No user logged in';
+        document.getElementById('currentShiftType').textContent = '--';
+        document.getElementById('currentShiftTime').textContent = '--';
+        document.getElementById('currentShiftStatus').textContent = '--';
+        return;
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    fetch(`/api/shift-schedules?user_id=${currentUserId}&shift_date=${today}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                const currentShift = data[0];
+                document.getElementById('currentShift').textContent = currentShift.shift_type ? currentShift.shift_type.charAt(0).toUpperCase() + currentShift.shift_type.slice(1) : 'Unknown';
+                document.getElementById('currentShiftType').textContent = currentShift.shift_type ? currentShift.shift_type.charAt(0).toUpperCase() + currentShift.shift_type.slice(1) : 'Unknown';
+                document.getElementById('currentShiftTime').textContent = `${currentShift.start_time || '--'} - ${currentShift.end_time || '--'}`;
+                document.getElementById('currentShiftStatus').textContent = currentShift.status ? currentShift.status.charAt(0).toUpperCase() + currentShift.status.slice(1) : 'Unknown';
+            } else {
+                document.getElementById('currentShift').textContent = 'No shift scheduled';
+                document.getElementById('currentShiftType').textContent = '--';
+                document.getElementById('currentShiftTime').textContent = '--';
+                document.getElementById('currentShiftStatus').textContent = '--';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading current shift:', error);
+            document.getElementById('currentShift').textContent = 'Error loading shift';
+            document.getElementById('currentShiftType').textContent = '--';
+            document.getElementById('currentShiftTime').textContent = '--';
+            document.getElementById('currentShiftStatus').textContent = '--';
+        });
+}
+
+// Load all schedules
+function loadSchedules() {
+    fetch('/api/shift-schedules')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Schedules data received:', data);
+            schedulesData = Array.isArray(data) ? data : [];
+            displaySchedules(schedulesData);
+        })
+        .catch(error => {
+            console.error('Error loading schedules:', error);
+            schedulesData = [];
+            displaySchedules([]);
+            alert('Error loading shift schedules: ' + error.message);
+        });
+}
+
+// Display schedules
+function displaySchedules(schedules) {
+    const tbody = document.getElementById('schedulesTableBody');
+    if (!tbody) {
+        console.error('Table body element not found');
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    if (!Array.isArray(schedules) || schedules.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">No shift schedules found</td></tr>';
+        return;
+    }
+    
+    schedules.forEach((schedule, index) => {
+        try {
+            const row = document.createElement('tr');
+            const statusClass = schedule.status === 'active' ? 'bg-success' : 
+                               schedule.status === 'completed' ? 'bg-info' : 
+                               schedule.status === 'cancelled' ? 'bg-danger' : 'bg-warning';
+            
+            // Safe date parsing
+            let shiftDate = '--';
+            try {
+                if (schedule.shift_date) {
+                    shiftDate = new Date(schedule.shift_date).toLocaleDateString();
+                }
+            } catch (e) {
+                console.warn('Error parsing shift date:', e);
+            }
+            
+            row.innerHTML = `
+                <td>${shiftDate}</td>
+                <td>${schedule.user_name || 'Unknown'}</td>
+                <td>${schedule.shift_type ? schedule.shift_type.charAt(0).toUpperCase() + schedule.shift_type.slice(1) : 'Unknown'}</td>
+                <td>${schedule.start_time || '--'}</td>
+                <td>${schedule.end_time || '--'}</td>
+                <td>${schedule.department || '--'}</td>
+                <td><span class="badge ${statusClass}">${schedule.status ? schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1) : 'Unknown'}</span></td>
+                <td>${schedule.responsibilities ? schedule.responsibilities.substring(0, 50) + '...' : '--'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewShiftDetails(${schedule.id || 0})">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    {% if current_user.role in ['admin', 'doctor'] %}
+                    <button class="btn btn-sm btn-outline-warning" onclick="editShift(${schedule.id || 0})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    {% endif %}
+                </td>
+            `;
+            tbody.appendChild(row);
+        } catch (error) {
+            console.error(`Error processing schedule at index ${index}:`, error, schedule);
+        }
+    });
+}
+
+// Filter schedules
+function filterSchedules() {
+    const userFilter = document.getElementById('userFilter').value;
+    const dateFilter = document.getElementById('dateFilter').value;
+    const shiftTypeFilter = document.getElementById('shiftTypeFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    let filtered = schedulesData;
+    
+    if (userFilter) {
+        filtered = filtered.filter(s => s.user_id == userFilter);
+    }
+    if (dateFilter) {
+        filtered = filtered.filter(s => s.shift_date === dateFilter);
+    }
+    if (shiftTypeFilter) {
+        filtered = filtered.filter(s => s.shift_type === shiftTypeFilter);
+    }
+    if (statusFilter) {
+        filtered = filtered.filter(s => s.status === statusFilter);
+    }
+    
+    displaySchedules(filtered);
+}
+
+// Create new shift
+async function createShift() {
+    const form = document.getElementById('shiftForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/shift-schedules', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Shift schedule created successfully!');
+            document.getElementById('shiftForm').reset();
+            bootstrap.Modal.getInstance(document.getElementById('createShiftModal')).hide();
+            loadSchedules(); // Refresh the data
+        } else {
+            alert('Error: ' + result.msg);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function viewShiftDetails(shiftId) {
+    // Implementation for viewing shift details
+    alert('View shift details: ' + shiftId);
+}
+
+function editShift(shiftId) {
+    // Implementation for editing shift
+    alert('Edit shift: ' + shiftId);
+}
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCurrentShiftStatus();
+    loadSchedules();
+    
+    // Set default date to today
+    document.getElementById('shiftDate').value = new Date().toISOString().split('T')[0];
+});
+
+// Auto-refresh current shift status every minute
+setInterval(loadCurrentShiftStatus, 60000);
+</script>
+{% endblock %}

@@ -1,0 +1,845 @@
+{% extends "base.html" %}
+
+{% block title %}Pharmacy Dashboard - HealthSync{% endblock %}
+{% block page_title %}Pharmacy Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Pharmacy Management</h2>
+    <div>
+        <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#dispenseMedicationModal">
+            <i class="fas fa-pills"></i> Dispense Medication
+        </button>
+        <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addInventoryModal">
+            <i class="fas fa-plus"></i> Add Inventory
+        </button>
+        <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#respondQueryModal">
+            <i class="fas fa-comments"></i> Respond to Query
+        </button>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Active Prescriptions</h4>
+                        <h2 class="mb-0" id="activePrescriptionsCount">0</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-prescription-bottle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Low Stock Items</h4>
+                        <h2 class="mb-0" id="lowStockCount">0</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Pending Queries</h4>
+                        <h2 class="mb-0" id="pendingQueriesCount">0</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-question-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Dispensed Today</h4>
+                        <h2 class="mb-0" id="dispensedTodayCount">0</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-4" id="pharmacyTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="prescriptions-tab" data-bs-toggle="tab" data-bs-target="#prescriptions" type="button" role="tab">
+            <i class="fas fa-prescription-bottle"></i> Prescriptions
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory" type="button" role="tab">
+            <i class="fas fa-boxes"></i> Inventory
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="dispensing-tab" data-bs-toggle="tab" data-bs-target="#dispensing" type="button" role="tab">
+            <i class="fas fa-pills"></i> Dispensing History
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="queries-tab" data-bs-toggle="tab" data-bs-target="#queries" type="button" role="tab">
+            <i class="fas fa-comments"></i> Patient Queries
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="pharmacyTabContent">
+    <!-- Prescriptions Tab -->
+    <div class="tab-pane fade show active" id="prescriptions" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Active Prescriptions</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="prescriptionsTable">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Medication</th>
+                                <th>Dosage</th>
+                                <th>Instructions</th>
+                                <th>Doctor</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prescriptionsTableBody">
+                            <!-- Prescriptions will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Tab -->
+    <div class="tab-pane fade" id="inventory" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Medication Inventory</h5>
+                <div>
+                    <button class="btn btn-sm btn-warning me-2" onclick="filterLowStock()">
+                        <i class="fas fa-exclamation-triangle"></i> Show Low Stock
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="clearInventoryFilter()">
+                        <i class="fas fa-times"></i> Clear Filter
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="inventoryTable">
+                        <thead>
+                            <tr>
+                                <th>Medication</th>
+                                <th>Quantity</th>
+                                <th>Unit</th>
+                                <th>Expiry Date</th>
+                                <th>Supplier</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody">
+                            <!-- Inventory will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dispensing History Tab -->
+    <div class="tab-pane fade" id="dispensing" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Dispensing History</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="dispensingTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Patient</th>
+                                <th>Medication</th>
+                                <th>Quantity</th>
+                                <th>Dispensed By</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dispensingTableBody">
+                            <!-- Dispensing records will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Queries Tab -->
+    <div class="tab-pane fade" id="queries" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Patient Queries</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="queriesTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Patient</th>
+                                <th>Query Type</th>
+                                <th>Query</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queriesTableBody">
+                            <!-- Queries will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dispense Medication Modal -->
+<div class="modal fade" id="dispenseMedicationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Dispense Medication</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="dispenseForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dispensePrescription" class="form-label">Prescription *</label>
+                                <select class="form-control" id="dispensePrescription" name="prescription_id" required onchange="loadPrescriptionDetails()">
+                                    <option value="">Select Prescription</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dispensePatient" class="form-label">Patient</label>
+                                <input type="text" class="form-control" id="dispensePatient" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dispenseMedication" class="form-label">Medication</label>
+                                <input type="text" class="form-control" id="dispenseMedication" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dispenseQuantity" class="form-label">Quantity to Dispense *</label>
+                                <input type="number" class="form-control" id="dispenseQuantity" name="quantity_dispensed" required min="1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dispenseUnit" class="form-label">Unit</label>
+                                <select class="form-control" id="dispenseUnit" name="unit">
+                                    <option value="tablets">Tablets</option>
+                                    <option value="capsules">Capsules</option>
+                                    <option value="ml">ML</option>
+                                    <option value="mg">MG</option>
+                                    <option value="units">Units</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dispenseStatus" class="form-label">Status</label>
+                                <select class="form-control" id="dispenseStatus" name="status">
+                                    <option value="dispensed">Dispensed</option>
+                                    <option value="verified">Verified</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="dispenseNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="dispenseNotes" name="notes" rows="3" 
+                                  placeholder="Any notes about the dispensing..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="dispenseMedication()">
+                    <i class="fas fa-pills"></i> Dispense Medication
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Inventory Modal -->
+<div class="modal fade" id="addInventoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Inventory Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="inventoryForm">
+                    <div class="mb-3">
+                        <label for="inventoryMedication" class="form-label">Medication Name *</label>
+                        <input type="text" class="form-control" id="inventoryMedication" name="medication_name" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="inventoryQuantity" class="form-label">Quantity *</label>
+                                <input type="number" class="form-control" id="inventoryQuantity" name="quantity" required min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="inventoryUnit" class="form-label">Unit</label>
+                                <select class="form-control" id="inventoryUnit" name="unit">
+                                    <option value="tablets">Tablets</option>
+                                    <option value="capsules">Capsules</option>
+                                    <option value="ml">ML</option>
+                                    <option value="mg">MG</option>
+                                    <option value="units">Units</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="inventoryExpiry" class="form-label">Expiry Date</label>
+                                <input type="date" class="form-control" id="inventoryExpiry" name="expiry_date">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="inventorySupplier" class="form-label">Supplier</label>
+                                <input type="text" class="form-control" id="inventorySupplier" name="supplier">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="addInventoryItem()">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Respond to Query Modal -->
+<div class="modal fade" id="respondQueryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Respond to Patient Query</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="queryResponseForm">
+                    <div class="mb-3">
+                        <label for="querySelect" class="form-label">Select Query *</label>
+                        <select class="form-control" id="querySelect" name="query_id" required onchange="loadQueryDetails()">
+                            <option value="">Select a pending query...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="queryPatient" class="form-label">Patient</label>
+                        <input type="text" class="form-control" id="queryPatient" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="queryText" class="form-label">Original Query</label>
+                        <textarea class="form-control" id="queryText" rows="3" readonly></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="queryResponse" class="form-label">Your Response *</label>
+                        <textarea class="form-control" id="queryResponse" name="response_text" rows="4" required 
+                                  placeholder="Provide a detailed response to the patient's query..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="queryStatus" class="form-label">Status</label>
+                        <select class="form-control" id="queryStatus" name="status">
+                            <option value="responded">Responded</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info" onclick="respondToQuery()">
+                    <i class="fas fa-reply"></i> Send Response
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let prescriptionsData = [];
+let inventoryData = [];
+let dispensingData = [];
+let queriesData = [];
+
+// Load dashboard data
+function loadDashboardData() {
+    loadPrescriptions();
+    loadInventory();
+    loadDispensingHistory();
+    loadPatientQueries();
+    updateQuickStats();
+}
+
+// Load prescriptions
+function loadPrescriptions() {
+    fetch('/api/prescriptions')
+        .then(response => response.json())
+        .then(data => {
+            prescriptionsData = data.filter(p => p.status === 'active');
+            displayPrescriptions(prescriptionsData);
+            updatePrescriptionSelect();
+        })
+        .catch(error => {
+            console.error('Error loading prescriptions:', error);
+        });
+}
+
+// Display prescriptions
+function displayPrescriptions(prescriptions) {
+    const tbody = document.getElementById('prescriptionsTableBody');
+    tbody.innerHTML = '';
+    
+    if (prescriptions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No active prescriptions found</td></tr>';
+        return;
+    }
+    
+    prescriptions.forEach(prescription => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${prescription.patient_name}</td>
+            <td>${prescription.medication}</td>
+            <td>${prescription.dosage || '--'}</td>
+            <td>${prescription.instructions || '--'}</td>
+            <td>${prescription.doctor_name}</td>
+            <td><span class="badge bg-success">Active</span></td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="dispenseFromTable(${prescription.id})">
+                    <i class="fas fa-pills"></i> Dispense
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Load inventory
+function loadInventory() {
+    fetch('/api/inventory')
+        .then(response => response.json())
+        .then(data => {
+            inventoryData = data;
+            displayInventory(data);
+        })
+        .catch(error => {
+            console.error('Error loading inventory:', error);
+        });
+}
+
+// Display inventory
+function displayInventory(inventory) {
+    const tbody = document.getElementById('inventoryTableBody');
+    tbody.innerHTML = '';
+    
+    if (inventory.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No inventory items found</td></tr>';
+        return;
+    }
+    
+    inventory.forEach(item => {
+        const row = document.createElement('tr');
+        const isLowStock = item.quantity <= 10;
+        const isExpired = item.expiry_date && new Date(item.expiry_date) < new Date();
+        
+        let statusBadge = '';
+        if (isExpired) {
+            statusBadge = '<span class="badge bg-danger">Expired</span>';
+        } else if (isLowStock) {
+            statusBadge = '<span class="badge bg-warning">Low Stock</span>';
+        } else {
+            statusBadge = '<span class="badge bg-success">In Stock</span>';
+        }
+        
+        row.innerHTML = `
+            <td>${item.medication_name}</td>
+            <td>${item.quantity}</td>
+            <td>${item.unit || '--'}</td>
+            <td>${item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : '--'}</td>
+            <td>${item.supplier || '--'}</td>
+            <td>${statusBadge}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="editInventoryItem(${item.id})">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Load dispensing history
+function loadDispensingHistory() {
+    fetch('/api/medication-dispensing')
+        .then(response => response.json())
+        .then(data => {
+            dispensingData = data;
+            displayDispensingHistory(data);
+        })
+        .catch(error => {
+            console.error('Error loading dispensing history:', error);
+        });
+}
+
+// Display dispensing history
+function displayDispensingHistory(dispensings) {
+    const tbody = document.getElementById('dispensingTableBody');
+    tbody.innerHTML = '';
+    
+    if (dispensings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No dispensing records found</td></tr>';
+        return;
+    }
+    
+    dispensings.forEach(dispensing => {
+        const row = document.createElement('tr');
+        const statusClass = dispensing.status === 'dispensed' ? 'bg-primary' : 
+                           dispensing.status === 'verified' ? 'bg-success' : 'bg-info';
+        
+        row.innerHTML = `
+            <td>${new Date(dispensing.dispensed_at).toLocaleDateString()}</td>
+            <td>${dispensing.patient_name}</td>
+            <td>${dispensing.medication_name}</td>
+            <td>${dispensing.quantity_dispensed} ${dispensing.unit}</td>
+            <td>${dispensing.dispensed_by}</td>
+            <td><span class="badge ${statusClass}">${dispensing.status}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewDispensingDetails(${dispensing.id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Load patient queries
+function loadPatientQueries() {
+    fetch('/api/patient-queries')
+        .then(response => response.json())
+        .then(data => {
+            queriesData = data;
+            displayPatientQueries(data);
+            updateQuerySelect();
+        })
+        .catch(error => {
+            console.error('Error loading patient queries:', error);
+        });
+}
+
+// Display patient queries
+function displayPatientQueries(queries) {
+    const tbody = document.getElementById('queriesTableBody');
+    tbody.innerHTML = '';
+    
+    if (queries.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No patient queries found</td></tr>';
+        return;
+    }
+    
+    queries.forEach(query => {
+        const row = document.createElement('tr');
+        const statusClass = query.status === 'pending' ? 'bg-warning' : 
+                           query.status === 'responded' ? 'bg-success' : 'bg-info';
+        
+        row.innerHTML = `
+            <td>${new Date(query.created_at).toLocaleDateString()}</td>
+            <td>${query.patient_name}</td>
+            <td>${query.query_type.replace('_', ' ').toUpperCase()}</td>
+            <td>${query.query_text.substring(0, 50)}...</td>
+            <td><span class="badge ${statusClass}">${query.status}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewQueryDetails(${query.id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Update quick stats
+function updateQuickStats() {
+    document.getElementById('activePrescriptionsCount').textContent = prescriptionsData.length;
+    document.getElementById('lowStockCount').textContent = inventoryData.filter(item => item.quantity <= 10).length;
+    document.getElementById('pendingQueriesCount').textContent = queriesData.filter(query => query.status === 'pending').length;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const dispensedToday = dispensingData.filter(d => d.dispensed_at.startsWith(today)).length;
+    document.getElementById('dispensedTodayCount').textContent = dispensedToday;
+}
+
+// Update prescription select for dispensing
+function updatePrescriptionSelect() {
+    const select = document.getElementById('dispensePrescription');
+    select.innerHTML = '<option value="">Select Prescription</option>';
+    
+    prescriptionsData.forEach(prescription => {
+        const option = document.createElement('option');
+        option.value = prescription.id;
+        option.textContent = `${prescription.patient_name} - ${prescription.medication}`;
+        option.dataset.patientId = prescription.patient_id;
+        option.dataset.medication = prescription.medication;
+        select.appendChild(option);
+    });
+}
+
+// Update query select for responses
+function updateQuerySelect() {
+    const select = document.getElementById('querySelect');
+    select.innerHTML = '<option value="">Select a pending query...</option>';
+    
+    const pendingQueries = queriesData.filter(query => query.status === 'pending');
+    pendingQueries.forEach(query => {
+        const option = document.createElement('option');
+        option.value = query.id;
+        option.textContent = `${query.patient_name} - ${query.query_type.replace('_', ' ')}`;
+        option.dataset.patientName = query.patient_name;
+        option.dataset.queryText = query.query_text;
+        select.appendChild(option);
+    });
+}
+
+// Load prescription details for dispensing
+function loadPrescriptionDetails() {
+    const select = document.getElementById('dispensePrescription');
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (selectedOption.value) {
+        document.getElementById('dispensePatient').value = selectedOption.textContent.split(' - ')[0];
+        document.getElementById('dispenseMedication').value = selectedOption.dataset.medication;
+    } else {
+        document.getElementById('dispensePatient').value = '';
+        document.getElementById('dispenseMedication').value = '';
+    }
+}
+
+// Load query details for response
+function loadQueryDetails() {
+    const select = document.getElementById('querySelect');
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (selectedOption.value) {
+        document.getElementById('queryPatient').value = selectedOption.dataset.patientName;
+        document.getElementById('queryText').value = selectedOption.dataset.queryText;
+    } else {
+        document.getElementById('queryPatient').value = '';
+        document.getElementById('queryText').value = '';
+    }
+}
+
+// Dispense medication
+async function dispenseMedication() {
+    const form = document.getElementById('dispenseForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    // Add patient_id from prescription
+    const prescriptionSelect = document.getElementById('dispensePrescription');
+    const selectedOption = prescriptionSelect.options[prescriptionSelect.selectedIndex];
+    data.patient_id = selectedOption.dataset.patientId;
+    
+    try {
+        const response = await fetch('/api/medication-dispensing', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Medication dispensed successfully!');
+            document.getElementById('dispenseForm').reset();
+            bootstrap.Modal.getInstance(document.getElementById('dispenseMedicationModal')).hide();
+            loadDashboardData(); // Refresh all data
+        } else {
+            alert('Error: ' + result.msg);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+// Add inventory item
+async function addInventoryItem() {
+    const form = document.getElementById('inventoryForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/inventory', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Inventory item added successfully!');
+            document.getElementById('inventoryForm').reset();
+            bootstrap.Modal.getInstance(document.getElementById('addInventoryModal')).hide();
+            loadInventory(); // Refresh inventory
+            updateQuickStats(); // Update stats
+        } else {
+            alert('Error: ' + result.msg);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+// Respond to query
+async function respondToQuery() {
+    const form = document.getElementById('queryResponseForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/patient-queries', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Response sent successfully!');
+            document.getElementById('queryResponseForm').reset();
+            bootstrap.Modal.getInstance(document.getElementById('respondQueryModal')).hide();
+            loadPatientQueries(); // Refresh queries
+            updateQuickStats(); // Update stats
+        } else {
+            alert('Error: ' + result.msg);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+// Quick dispense from table
+function dispenseFromTable(prescriptionId) {
+    const prescription = prescriptionsData.find(p => p.id === prescriptionId);
+    if (prescription) {
+        document.getElementById('dispensePrescription').value = prescriptionId;
+        loadPrescriptionDetails();
+        const modal = new bootstrap.Modal(document.getElementById('dispenseMedicationModal'));
+        modal.show();
+    }
+}
+
+// Filter functions
+function filterLowStock() {
+    const lowStockItems = inventoryData.filter(item => item.quantity <= 10);
+    displayInventory(lowStockItems);
+}
+
+function clearInventoryFilter() {
+    displayInventory(inventoryData);
+}
+
+// View details functions
+function viewDispensingDetails(dispensingId) {
+    alert('View dispensing details: ' + dispensingId);
+}
+
+function viewQueryDetails(queryId) {
+    alert('View query details: ' + queryId);
+}
+
+function editInventoryItem(itemId) {
+    alert('Edit inventory item: ' + itemId);
+}
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+});
+
+// Auto-refresh every 30 seconds
+setInterval(loadDashboardData, 30000);
+</script>
+{% endblock %}

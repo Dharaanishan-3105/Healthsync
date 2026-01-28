@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - HealthSync{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Role-specific Welcome Message -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white" style="background: linear-gradient(135deg, #00d4aa 0%, #00a8cc 100%);">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="mb-2" style="color: #2c3e50; text-shadow: 1px 1px 2px rgba(255,255,255,0.5); font-weight: bold;">Welcome back, {{ current_user.full_name }}!</h2>
+                        <p class="mb-0" style="color: #34495e; text-shadow: 1px 1px 2px rgba(255,255,255,0.3); font-weight: 500;">
+                            {% if current_user.role == 'admin' %}
+                                You have full system access and control over all hospital operations.
+                            {% elif current_user.role == 'doctor' %}
+                                Ready to provide excellent patient care and manage medical records.
+                            {% elif current_user.role == 'nurse' %}
+                                Monitor patients and assist in their care and recovery.
+                            {% elif current_user.role == 'pharmacy_nurse' %}
+                                Manage medication dispensing and pharmacy operations.
+                            {% elif current_user.role == 'lab_assistant' %}
+                                Handle laboratory tests and result management.
+                            {% elif current_user.role == 'receptionist' %}
+                                Manage appointments, patient registration, and billing.
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <i class="fas fa-user-md fa-3x opacity-75 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Real-time Status Cards -->
+<div class="row">
+    {% if current_user.role in ['admin', 'doctor', 'nurse', 'receptionist'] %}
+    <div class="col-md-3 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Patients</h4>
+                        <h2 class="mb-0">{{ dashboard_data.patients_count }}</h2>
+                        <small>Total registered</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if current_user.role in ['admin', 'doctor', 'receptionist'] %}
+    <div class="col-md-3 mb-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Appointments</h4>
+                        <h2 class="mb-0">{{ dashboard_data.appointments_count }}</h2>
+                        <small>{% if current_user.role == 'doctor' %}Your appointments{% else %}Total scheduled{% endif %}</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-calendar fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if current_user.role in ['admin', 'doctor', 'pharmacy_nurse', 'nurse'] %}
+    <div class="col-md-3 mb-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Prescriptions</h4>
+                        <h2 class="mb-0">{{ dashboard_data.prescriptions_count }}</h2>
+                        <small>{% if current_user.role == 'doctor' %}Your prescriptions{% elif current_user.role == 'pharmacy_nurse' %}To dispense{% elif current_user.role == 'nurse' %}To monitor{% else %}Total active{% endif %}</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-pills fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if current_user.role in ['admin', 'doctor', 'lab_assistant'] %}
+    <div class="col-md-3 mb-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Lab Results</h4>
+                        <h2 class="mb-0">{{ dashboard_data.lab_results_count }}</h2>
+                        <small>{% if current_user.role == 'lab_assistant' %}To process{% else %}Total results{% endif %}</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-flask fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if current_user.role == 'nurse' %}
+    <div class="col-md-3 mb-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Today's Shift</h4>
+                        {% if dashboard_data.shift_info %}
+                        <h2 class="mb-0">{{ dashboard_data.shift_info.shift_type.title() }}</h2>
+                        <small>{{ dashboard_data.shift_info.start_time }} - {{ dashboard_data.shift_info.end_time }}</small>
+                        {% else %}
+                        <h2 class="mb-0">No Shift</h2>
+                        <small>No shift scheduled</small>
+                        {% endif %}
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-calendar-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if current_user.role in ['admin', 'receptionist'] %}
+    <div class="col-md-3 mb-4">
+        <div class="card bg-secondary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Billing</h4>
+                        <h2 class="mb-0">{{ dashboard_data.billing_count }}</h2>
+                        <small>Total records</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-receipt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Pending Tasks & Notifications -->
+{% if dashboard_data.pending_tasks %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Pending Tasks & Notifications</h5>
+            </div>
+            <div class="card-body">
+                {% for task in dashboard_data.pending_tasks %}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <i class="fas fa-bell"></i> {{ task }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Activity -->
+<div class="row">
+    {% if current_user.role in ['admin', 'doctor', 'receptionist'] and dashboard_data.recent_appointments %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar"></i> Recent Appointments
+                    <span class="badge bg-primary ms-2">{{ dashboard_data.recent_appointments|length }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in dashboard_data.recent_appointments %}
+                            <tr>
+                                <td>{{ appointment.patient.name if appointment.patient else 'N/A' }}</td>
+                                <td>{{ appointment.scheduled_for.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ appointment.appointment_type or 'General' }}</td>
+                                <td>
+                                    {% if appointment.status == 'completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                    {% elif appointment.status == 'scheduled' %}
+                                        <span class="badge bg-warning">Scheduled</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ appointment.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if current_user.role in ['admin', 'doctor', 'nurse', 'receptionist'] and dashboard_data.recent_patients %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users"></i> Recent Patients
+                    <span class="badge bg-primary ms-2">{{ dashboard_data.recent_patients|length }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Patient ID</th>
+                                <th>Name</th>
+                                <th>Age</th>
+                                <th>Gender</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for patient in dashboard_data.recent_patients %}
+                            <tr>
+                                <td>{{ patient.patient_id }}</td>
+                                <td>{{ patient.name }}</td>
+                                <td>{{ patient.age or 'N/A' }}</td>
+                                <td>{{ patient.gender or 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if current_user.role in ['admin', 'doctor', 'nurse', 'receptionist'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('patients_page') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-users"></i><br>Patients
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if current_user.role in ['admin', 'doctor', 'receptionist'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('appointments_page') }}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-calendar"></i><br>Appointments
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if current_user.role in ['admin', 'doctor', 'pharmacy_nurse', 'nurse'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('prescriptions_page') }}" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-pills"></i><br>Prescriptions
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if current_user.role in ['admin', 'pharmacy_nurse'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('pharmacy_dashboard_page') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-clinic-medical"></i><br>Pharmacy Dashboard
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if current_user.role in ['admin', 'doctor', 'nurse'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('vital_monitoring_page') }}" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-heartbeat"></i><br>Vital Monitoring
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if current_user.role in ['admin', 'doctor', 'nurse'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('medication_administration_page') }}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-pills"></i><br>Medication Admin
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if current_user.role in ['admin', 'doctor', 'nurse'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('shift_schedule_page') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-calendar-alt"></i><br>Shift Schedule
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if current_user.role in ['admin', 'doctor', 'lab_assistant'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('lab_results_page') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-flask"></i><br>Lab Results
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if current_user.role in ['admin', 'lab_assistant'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('lab_dashboard_page') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-microscope"></i><br>Lab Dashboard
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if current_user.role in ['admin', 'receptionist'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('billing_page') }}" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-receipt"></i><br>Billing
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if current_user.role in ['admin', 'receptionist'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('receptionist_dashboard_page') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-desktop"></i><br>Reception Dashboard
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if current_user.role in ['admin', 'patient'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('patient_dashboard_page') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-user"></i><br>Patient Portal
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if current_user.role == 'admin' %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('admin_page') }}" class="btn btn-outline-dark w-100">
+                            <i class="fas fa-cog"></i><br>Admin Panel
+                        </a>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('admin_dashboard_page') }}" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-tachometer-alt"></i><br>Admin Dashboard
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if current_user.role in ['admin', 'doctor'] %}
+                    <div class="col-md-2 mb-2">
+                        <a href="{{ url_for('ai_dashboard_page') }}" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-brain"></i><br>AI Dashboard
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

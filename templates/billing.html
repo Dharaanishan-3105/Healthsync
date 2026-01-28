@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block title %}Billing - HealthSync{% endblock %}
+{% block page_title %}Billing Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Billing & Payment Management</h2>
+    <div>
+        <button class="btn btn-outline-success me-2" onclick="generateReceipt()">
+            <i class="fas fa-receipt"></i> Generate Receipt
+        </button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBillingModal">
+            <i class="fas fa-plus"></i> Create Bill
+        </button>
+    </div>
+</div>
+
+<!-- Billing Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3 id="totalBills">$0</h3>
+                <p class="mb-0">Total Bills</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3 id="paidBills">$0</h3>
+                <p class="mb-0">Paid Bills</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <h3 id="pendingBills">$0</h3>
+                <p class="mb-0">Pending Bills</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <h3 id="overdueBills">$0</h3>
+                <p class="mb-0">Overdue Bills</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="searchBilling" placeholder="Search billing records...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-control" id="filterStatus">
+                    <option value="">All Status</option>
+                    <option value="paid">Paid</option>
+                    <option value="pending">Pending</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-control" id="filterPaymentMethod">
+                    <option value="">All Payment Methods</option>
+                    <option value="cash">Cash</option>
+                    <option value="credit_card">Credit Card</option>
+                    <option value="insurance">Insurance</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" class="form-control" id="filterDate">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Service</th>
+                        <th>Amount</th>
+                        <th>Tax</th>
+                        <th>Total</th>
+                        <th>Payment Method</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for billing in billing_records %}
+                    <tr>
+                        <td>{{ billing.patient.name if billing.patient else 'N/A' }}</td>
+                        <td>{{ billing.service_description }}</td>
+                        <td>${{ "%.2f"|format(billing.amount) }}</td>
+                        <td>${{ "%.2f"|format(billing.tax) }}</td>
+                        <td><strong>${{ "%.2f"|format(billing.total) }}</strong></td>
+                        <td>{{ billing.payment_method or 'N/A' }}</td>
+                        <td>
+                            {% if billing.status == 'paid' %}
+                                <span class="badge bg-success">Paid</span>
+                            {% elif billing.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% elif billing.status == 'overdue' %}
+                                <span class="badge bg-danger">Overdue</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ billing.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ billing.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewBilling({{ billing.id }})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning" onclick="editBilling({{ billing.id }})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" onclick="printReceipt({{ billing.id }})">
+                                <i class="fas fa-print"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Billing Modal -->
+<div class="modal fade" id="addBillingModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Bill</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addBillingForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patient_id" class="form-label">Patient *</label>
+                                <select class="form-control" id="patient_id" name="patient_id" required>
+                                    <option value="">Select Patient</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="service_description" class="form-label">Service Description *</label>
+                                <input type="text" class="form-control" id="service_description" name="service_description" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="amount" class="form-label">Amount *</label>
+                                <input type="number" step="0.01" class="form-control" id="amount" name="amount" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="tax" class="form-label">Tax</label>
+                                <input type="number" step="0.01" class="form-control" id="tax" name="tax" value="0">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="total" class="form-label">Total</label>
+                                <input type="number" step="0.01" class="form-control" id="total" name="total" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="payment_method" class="form-label">Payment Method</label>
+                                <select class="form-control" id="payment_method" name="payment_method">
+                                    <option value="">Select Payment Method</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="credit">Credit Card</option>
+                                    <option value="debit">Debit Card</option>
+                                    <option value="check">Check</option>
+                                    <option value="insurance">Insurance</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="insurance_provider" class="form-label">Insurance Provider</label>
+                                <input type="text" class="form-control" id="insurance_provider" name="insurance_provider">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-control" id="status" name="status">
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addBilling()">Create Bill</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Calculate total when amount or tax changes
+document.getElementById('amount').addEventListener('input', calculateTotal);
+document.getElementById('tax').addEventListener('input', calculateTotal);
+
+function calculateTotal() {
+    const amount = parseFloat(document.getElementById('amount').value) || 0;
+    const tax = parseFloat(document.getElementById('tax').value) || 0;
+    const total = amount + tax;
+    document.getElementById('total').value = total.toFixed(2);
+}
+
+async function addBilling() {
+    const form = document.getElementById('addBillingForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/billing', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Bill created successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + result.msg);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function viewBilling(billingId) {
+    alert('View billing: ' + billingId);
+}
+
+function editBilling(billingId) {
+    alert('Edit billing: ' + billingId);
+}
+
+function printReceipt(billingId) {
+    // Generate and print receipt
+    const receiptWindow = window.open('', '_blank');
+    receiptWindow.document.write(generateReceiptHTML(billingId));
+    receiptWindow.document.close();
+    receiptWindow.print();
+}
+
+function generateReceipt() {
+    // Generate receipt for selected billing records
+    const selectedBills = getSelectedBills();
+    if (selectedBills.length === 0) {
+        alert('Please select billing records to generate receipt');
+        return;
+    }
+    
+    const receiptWindow = window.open('', '_blank');
+    receiptWindow.document.write(generateReceiptHTML(selectedBills));
+    receiptWindow.document.close();
+    receiptWindow.print();
+}
+
+function generateReceiptHTML(billingIds) {
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>HealthSync Receipt</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
+                .logo { font-size: 24px; font-weight: bold; color: #00d4aa; }
+                .receipt-details { margin: 20px 0; }
+                .item-row { display: flex; justify-content: space-between; margin: 10px 0; }
+                .total { font-weight: bold; font-size: 18px; border-top: 2px solid #333; padding-top: 10px; }
+                .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="logo">HealthSync</div>
+                <div>Smart Hospital Management System</div>
+                <div>Receipt #${Date.now()}</div>
+            </div>
+            
+            <div class="receipt-details">
+                <div class="item-row">
+                    <span>Date:</span>
+                    <span>${new Date().toLocaleDateString()}</span>
+                </div>
+                <div class="item-row">
+                    <span>Time:</span>
+                    <span>${new Date().toLocaleTimeString()}</span>
+                </div>
+            </div>
+            
+            <div class="item-row total">
+                <span>Total Amount:</span>
+                <span>$0.00</span>
+            </div>
+            
+            <div class="footer">
+                <p>Thank you for choosing HealthSync!</p>
+                <p>For inquiries, contact: support@healthsync.com</p>
+            </div>
+        </body>
+        </html>
+    `;
+}
+
+function getSelectedBills() {
+    // Get selected billing records (implement checkbox selection)
+    return [];
+}
+
+function filterBilling() {
+    const searchTerm = document.getElementById('searchBilling').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatus').value;
+    const paymentMethodFilter = document.getElementById('filterPaymentMethod').value;
+    const dateFilter = document.getElementById('filterDate').value;
+    
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const patient = row.cells[0].textContent.toLowerCase();
+        const service = row.cells[1].textContent.toLowerCase();
+        const status = row.cells[6].textContent.toLowerCase();
+        const paymentMethod = row.cells[5].textContent.toLowerCase();
+        const date = row.cells[7].textContent;
+        
+        const matchesSearch = patient.includes(searchTerm) || service.includes(searchTerm);
+        const matchesStatus = !statusFilter || status.includes(statusFilter);
+        const matchesPaymentMethod = !paymentMethodFilter || paymentMethod.includes(paymentMethodFilter);
+        const matchesDate = !dateFilter || date.includes(dateFilter);
+        
+        if (matchesSearch && matchesStatus && matchesPaymentMethod && matchesDate) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function updateBillingSummary() {
+    // Calculate billing summary statistics
+    const rows = document.querySelectorAll('tbody tr');
+    let totalBills = 0;
+    let paidBills = 0;
+    let pendingBills = 0;
+    let overdueBills = 0;
+    
+    rows.forEach(row => {
+        if (row.style.display !== 'none') {
+            const amount = parseFloat(row.cells[4].textContent.replace('$', '')) || 0;
+            const status = row.cells[6].textContent.toLowerCase();
+            
+            totalBills += amount;
+            
+            if (status.includes('paid')) {
+                paidBills += amount;
+            } else if (status.includes('pending')) {
+                pendingBills += amount;
+            } else if (status.includes('overdue')) {
+                overdueBills += amount;
+            }
+        }
+    });
+    
+    document.getElementById('totalBills').textContent = '$' + totalBills.toFixed(2);
+    document.getElementById('paidBills').textContent = '$' + paidBills.toFixed(2);
+    document.getElementById('pendingBills').textContent = '$' + pendingBills.toFixed(2);
+    document.getElementById('overdueBills').textContent = '$' + overdueBills.toFixed(2);
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('searchBilling').addEventListener('input', filterBilling);
+    document.getElementById('filterStatus').addEventListener('change', filterBilling);
+    document.getElementById('filterPaymentMethod').addEventListener('change', filterBilling);
+    document.getElementById('filterDate').addEventListener('change', filterBilling);
+    
+    // Update summary on page load
+    updateBillingSummary();
+});
+</script>
+{% endblock %}
