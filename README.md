@@ -169,7 +169,7 @@ HealthSync/
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone <https://github.com/Dharaanishan-3105/Healthsync.git>
    cd HealthSync
    ```
 
